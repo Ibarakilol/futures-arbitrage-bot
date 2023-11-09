@@ -1,6 +1,7 @@
 from typing import Union
 import asyncio
 import time
+from datetime import datetime
 
 from aiogram import Bot
 
@@ -9,7 +10,7 @@ from exchanges import binance, bybit, kucoin, huobi
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
-symbols_data: dict[str, dict[str, float]] = {}
+symbols_data: dict[str, dict[str, dict[str, float]]] = {}
 
 
 def get_futures_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
@@ -26,7 +27,7 @@ def get_futures_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
 
 
 def parse_funding_rates_data(
-    funding_rates_data: dict[str, float], exchange_name: str
+    funding_rates_data: dict[str, dict[str, float]], exchange_name: str
 ) -> None:
     for symbol, data in funding_rates_data.items():
         if MAIN_ASSET in symbol:
@@ -56,35 +57,64 @@ async def find_arbitrages() -> None:
         if len(data.keys()) > 1:
             buy_exchange = ""
             buy_funding_rate = 0
+            buy_predicted_funding_rate = 0
+            buy_next_funding_time = 0
             sell_exchange = ""
             sell_funding_rate = 0
+            sell_predicted_funding_rate = 0
+            sell_next_funding_time = 0
 
-            for exchange, funding_rate in data.items():
-                if buy_funding_rate == 0 or funding_rate < buy_funding_rate:
+            for exchange, symbol_data in data.items():
+                if (
+                    buy_funding_rate == 0
+                    or symbol_data["funding_rate"] < buy_funding_rate
+                ):
                     buy_exchange = exchange
-                    buy_funding_rate = funding_rate
+                    buy_funding_rate = symbol_data["funding_rate"]
+                    buy_predicted_funding_rate = (
+                        round(symbol_data["predicted_funding_rate"], 4)
+                        if "predicted_funding_rate" in symbol_data
+                        else "-"
+                    )
+                    buy_next_funding_time = symbol_data["next_funding_time"]
 
-                if sell_funding_rate == 0 or funding_rate > sell_funding_rate:
+                if (
+                    sell_funding_rate == 0
+                    or symbol_data["funding_rate"] > sell_funding_rate
+                ):
                     sell_exchange = exchange
-                    sell_funding_rate = funding_rate
+                    sell_funding_rate = symbol_data["funding_rate"]
+                    sell_predicted_funding_rate = (
+                        round(symbol_data["predicted_funding_rate"], 4)
+                        if "predicted_funding_rate" in symbol_data
+                        else "-"
+                    )
+                    sell_next_funding_time = symbol_data["next_funding_time"]
 
             if buy_exchange != sell_exchange and buy_funding_rate and sell_funding_rate:
-                spread = 0
+                rate_spread = 0
 
                 if buy_funding_rate < 0 and sell_funding_rate > 0:
-                    spread = buy_funding_rate + sell_funding_rate
+                    rate_spread = buy_funding_rate + sell_funding_rate
                 elif (buy_funding_rate > 0 and sell_funding_rate > 0) or (
                     buy_funding_rate < 0 and sell_funding_rate < 0
                 ):
-                    spread = buy_funding_rate - sell_funding_rate
+                    rate_spread = buy_funding_rate - sell_funding_rate
 
-                spread = abs(spread) - 0.2
+                rate_spread = abs(rate_spread) - 0.2
 
-                if spread >= FUTURES_MIN_SPREAD:
+                if rate_spread >= FUTURES_MIN_SPREAD:
+                    buy_next_funding_time = datetime.fromtimestamp(
+                        buy_next_funding_time / 1000
+                    ).strftime("%H:%M")
+                    sell_next_funding_time = datetime.fromtimestamp(
+                        sell_next_funding_time / 1000
+                    ).strftime("%H:%M")
+
                     base_asset = symbol.split(MAIN_ASSET)[0]
-                    message = f"Пара: {base_asset}/{MAIN_ASSET}, спред: {round(spread, 2)}%\n\n"
-                    buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}%\n{get_futures_trade_link(buy_exchange, base_asset)}"
-                    sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}%\n{get_futures_trade_link(sell_exchange, base_asset)}"
+                    message = f"Пара: {base_asset}/{MAIN_ASSET}, спред: {round(rate_spread, 2)}%\n\n"
+                    buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}%\nПрогнозная ставка: {buy_predicted_funding_rate}%\nСледующая выплата: {buy_next_funding_time}\n{get_futures_trade_link(buy_exchange, base_asset)}"
+                    sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}%\nПрогнозная ставка: {sell_predicted_funding_rate}%\nСледующая выплата: {sell_next_funding_time}\n{get_futures_trade_link(sell_exchange, base_asset)}"
 
                     full_message = f"{message}{buy_message}\n\n{sell_message}"
 
