@@ -1,0 +1,7 @@
+# dependencies
+/venv
+
+# misc
+.DS_Store
+.idea
+.env
