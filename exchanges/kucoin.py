@@ -17,7 +17,8 @@ def get_kucoin_funding_rates() -> dict[str, dict[str, float]]:
             "funding_rate": funding_rate["fundingFeeRate"] * 100,
             "index_price": funding_rate["indexPrice"],
             "mark_price": funding_rate["markPrice"],
-            "next_funding_time": time.time() + funding_rate["nextFundingRateTime"],
+            "next_funding_time": time.time() * 1000
+            + funding_rate["nextFundingRateTime"],
             "predicted_funding_rate": funding_rate["predictedFundingFeeRate"] * 100,
         }
         for funding_rate in funding_rates.json()["data"]

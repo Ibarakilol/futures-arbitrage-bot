@@ -7,6 +7,7 @@ from aiogram import Bot
 
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, FUTURES_MIN_SPREAD
 from exchanges import binance, bybit, kucoin, huobi
+from constants.funding_type import FUNDING_TYPE
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
@@ -59,10 +60,12 @@ async def find_arbitrages() -> None:
             buy_funding_rate = 0
             buy_predicted_funding_rate = 0
             buy_next_funding_time = 0
+            buy_mark_price = 0
             sell_exchange = ""
             sell_funding_rate = 0
             sell_predicted_funding_rate = 0
             sell_next_funding_time = 0
+            sell_mark_price = 0
 
             for exchange, symbol_data in data.items():
                 if (
@@ -77,6 +80,9 @@ async def find_arbitrages() -> None:
                         else "-"
                     )
                     buy_next_funding_time = symbol_data["next_funding_time"]
+                    buy_mark_price = (
+                        symbol_data["mark_price"] if "mark_price" in symbol_data else 0
+                    )
 
                 if (
                     sell_funding_rate == 0
@@ -90,6 +96,9 @@ async def find_arbitrages() -> None:
                         else "-"
                     )
                     sell_next_funding_time = symbol_data["next_funding_time"]
+                    sell_mark_price = (
+                        symbol_data["mark_price"] if "mark_price" in symbol_data else 0
+                    )
 
             if buy_exchange != sell_exchange and buy_funding_rate and sell_funding_rate:
                 rate_spread = 0
@@ -101,7 +110,7 @@ async def find_arbitrages() -> None:
                 ):
                     rate_spread = buy_funding_rate - sell_funding_rate
 
-                rate_spread = abs(rate_spread) - 0.2
+                rate_spread = abs(rate_spread)
 
                 if rate_spread >= FUTURES_MIN_SPREAD:
                     buy_next_funding_time = datetime.fromtimestamp(
@@ -111,12 +120,20 @@ async def find_arbitrages() -> None:
                         sell_next_funding_time / 1000
                     ).strftime("%H:%M")
 
-                    base_asset = symbol.split(MAIN_ASSET)[0]
-                    message = f"Пара: {base_asset}/{MAIN_ASSET}, спред: {round(rate_spread, 2)}%\n\n"
-                    buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}%\nПрогнозная ставка: {buy_predicted_funding_rate}%\nСледующая выплата: {buy_next_funding_time}\n{get_futures_trade_link(buy_exchange, base_asset)}"
-                    sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}%\nПрогнозная ставка: {sell_predicted_funding_rate}%\nСледующая выплата: {sell_next_funding_time}\n{get_futures_trade_link(sell_exchange, base_asset)}"
+                    mark_price_message = ""
+                    if buy_mark_price and sell_mark_price:
+                        mark_price_spread = round(
+                            abs((sell_mark_price / buy_mark_price - 1) * 100), 2
+                        )
+                        mark_price_message = f", курсовой спред: {mark_price_spread}%"
 
-                    full_message = f"{message}{buy_message}\n\n{sell_message}"
+                    base_asset = symbol.split(MAIN_ASSET)[0]
+                    message = f"Пара: {base_asset}/{MAIN_ASSET}\n\n"
+                    buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}% ({FUNDING_TYPE[buy_exchange]})\nПрогнозная ставка: {buy_predicted_funding_rate}%\nСледующая выплата: {buy_next_funding_time}\n{get_futures_trade_link(buy_exchange, base_asset)}\n\n"
+                    sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}% ({FUNDING_TYPE[sell_exchange]})\nПрогнозная ставка: {sell_predicted_funding_rate}%\nСледующая выплата: {sell_next_funding_time}\n{get_futures_trade_link(sell_exchange, base_asset)}\n\n"
+                    spread_message = f"Спред: {round(rate_spread, 2)}%"
+
+                    full_message = f"{message}{buy_message}{sell_message}{spread_message}{mark_price_message}"
 
                     await bot.send_message(TELEGRAM_CHAT_ID, full_message)
                     print(full_message)
