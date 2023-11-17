@@ -5,7 +5,7 @@ from datetime import datetime
 
 from aiogram import Bot
 
-from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, FUTURES_MIN_SPREAD
+from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, MIN_SPREAD
 from exchanges import binance, bybit, kucoin, huobi
 from constants.funding_type import FUNDING_TYPE
 
@@ -112,7 +112,7 @@ async def find_arbitrages() -> None:
 
                 rate_spread = abs(rate_spread)
 
-                if rate_spread >= FUTURES_MIN_SPREAD:
+                if rate_spread >= MIN_SPREAD:
                     buy_next_funding_time = datetime.fromtimestamp(
                         buy_next_funding_time / 1000
                     ).strftime("%H:%M")
@@ -140,7 +140,7 @@ async def find_arbitrages() -> None:
 
 
 async def run() -> None:
-    print(f"Минимальный спред: {FUTURES_MIN_SPREAD}%.\nМониторинг сделок...\n")
+    print(f"Минимальный спред: {MIN_SPREAD}%.\nМониторинг сделок...\n")
 
     while True:
         get_funding_rates_data()
