@@ -1,6 +1,10 @@
 import requests
 
 
+def get_bybit_spot_trade_link(currency1: str, currency2: str) -> str:
+    return f"https://www.bybit.com/ru-RU/trade/spot/{currency1}/{currency2}"
+
+
 def get_bybit_futures_trade_link(currency1: str, currency2: str) -> str:
     return f"https://www.bybit.com/trade/usdt/{currency1}{currency2}"
 

@@ -1,6 +1,10 @@
 import requests
 
 
+def get_binance_spot_trade_link(currency1: str, currency2: str) -> str:
+    return f"https://www.binance.com/ru/trade/{currency1}_{currency2}?type=spot"
+
+
 def get_binance_futures_trade_link(currency1: str, currency2: str) -> str:
     return f"https://www.binance.com/ru/futures/{currency1}{currency2}"
 

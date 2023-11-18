@@ -3,6 +3,10 @@ import time
 import requests
 
 
+def get_kucoin_spot_trade_link(currency1: str, currency2: str) -> str:
+    return f"https://www.kucoin.com/ru/trade/{currency1}-{currency2}"
+
+
 def get_kucoin_futures_trade_link(currency1: str, currency2: str) -> str:
     return f"https://www.kucoin.com/ru/futures/trade/{currency1}{currency2}M"
 

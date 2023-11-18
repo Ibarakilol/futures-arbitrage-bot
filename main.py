@@ -27,6 +27,19 @@ def get_futures_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
         return None
 
 
+def get_spot_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
+    if exchange == "binance":
+        return binance.get_binance_spot_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "bybit":
+        return bybit.get_bybit_spot_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "kucoin":
+        return kucoin.get_kucoin_spot_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "huobi":
+        return huobi.get_huobi_spot_trade_link(base_asset, MAIN_ASSET)
+    else:
+        return None
+
+
 def parse_funding_rates_data(
     funding_rates_data: dict[str, dict[str, float]], exchange_name: str
 ) -> None:
@@ -55,12 +68,16 @@ def get_funding_rates_data() -> None:
 
 async def find_arbitrages() -> None:
     for symbol, data in symbols_data.items():
+        base_asset = symbol.split(MAIN_ASSET)[0]
+
         if len(data.keys()) > 1:
             buy_exchange = ""
             buy_funding_rate = 0
             buy_predicted_funding_rate = 0
             buy_next_funding_time = 0
+            buy_index_price = 0
             buy_mark_price = 0
+
             sell_exchange = ""
             sell_funding_rate = 0
             sell_predicted_funding_rate = 0
@@ -79,10 +96,11 @@ async def find_arbitrages() -> None:
                         if "predicted_funding_rate" in symbol_data
                         else "-"
                     )
-                    buy_next_funding_time = symbol_data["next_funding_time"]
-                    buy_mark_price = (
-                        symbol_data["mark_price"] if "mark_price" in symbol_data else 0
-                    )
+                    buy_next_funding_time = datetime.fromtimestamp(
+                        symbol_data["next_funding_time"] / 1000
+                    ).strftime("%H:%M")
+                    buy_index_price = symbol_data["index_price"]
+                    buy_mark_price = symbol_data["mark_price"]
 
                 if (
                     sell_funding_rate == 0
@@ -95,10 +113,10 @@ async def find_arbitrages() -> None:
                         if "predicted_funding_rate" in symbol_data
                         else "-"
                     )
-                    sell_next_funding_time = symbol_data["next_funding_time"]
-                    sell_mark_price = (
-                        symbol_data["mark_price"] if "mark_price" in symbol_data else 0
-                    )
+                    sell_next_funding_time = datetime.fromtimestamp(
+                        symbol_data["next_funding_time"] / 1000
+                    ).strftime("%H:%M")
+                    sell_mark_price = symbol_data["mark_price"]
 
             if buy_exchange != sell_exchange and buy_funding_rate and sell_funding_rate:
                 rate_spread = 0
@@ -113,34 +131,41 @@ async def find_arbitrages() -> None:
                 rate_spread = abs(rate_spread)
 
                 if rate_spread >= MIN_SPREAD:
-                    buy_next_funding_time = datetime.fromtimestamp(
-                        buy_next_funding_time / 1000
-                    ).strftime("%H:%M")
-                    sell_next_funding_time = datetime.fromtimestamp(
-                        sell_next_funding_time / 1000
-                    ).strftime("%H:%M")
+                    rate_price_spread = round(
+                        (sell_mark_price / buy_mark_price - 1) * 100, 2
+                    )
 
-                    mark_price_message = ""
-                    if buy_mark_price and sell_mark_price:
-                        mark_price_spread = round(
-                            abs((sell_mark_price / buy_mark_price - 1) * 100), 2
-                        )
-                        mark_price_message = f", курсовой спред: {mark_price_spread}%"
-
-                    base_asset = symbol.split(MAIN_ASSET)[0]
                     message = f"Пара: {base_asset}/{MAIN_ASSET}\n\n"
                     buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}% ({FUNDING_TYPE[buy_exchange]})\nПрогнозная ставка: {buy_predicted_funding_rate}%\nСледующая выплата: {buy_next_funding_time}\n{get_futures_trade_link(buy_exchange, base_asset)}\n\n"
                     sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}% ({FUNDING_TYPE[sell_exchange]})\nПрогнозная ставка: {sell_predicted_funding_rate}%\nСледующая выплата: {sell_next_funding_time}\n{get_futures_trade_link(sell_exchange, base_asset)}\n\n"
-                    spread_message = f"Спред: {round(rate_spread, 2)}%"
+                    spread_message = f"Спред: {round(rate_spread, 2)}%, курсовой спред: {rate_price_spread}%"
 
-                    full_message = f"{message}{buy_message}{sell_message}{spread_message}{mark_price_message}"
+                    full_message = (
+                        f"{message}{buy_message}{sell_message}{spread_message}"
+                    )
+
+                    await bot.send_message(TELEGRAM_CHAT_ID, full_message)
+                    print(full_message)
+                elif sell_funding_rate >= MIN_SPREAD:
+                    rate_price_spread = round(
+                        (sell_mark_price / buy_index_price - 1) * 100, 2
+                    )
+
+                    message = f"Пара: {base_asset}/{MAIN_ASSET}\n\n"
+                    buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\n{get_spot_trade_link(buy_exchange, base_asset)}\n\n"
+                    sell_message = f"Продажа(SHORT) на {sell_exchange.capitalize()}\nТекущая ставка: {round(sell_funding_rate, 4)}% ({FUNDING_TYPE[sell_exchange]})\nПрогнозная ставка: {sell_predicted_funding_rate}%\nСледующая выплата: {sell_next_funding_time}\n{get_futures_trade_link(sell_exchange, base_asset)}\n\n"
+                    spread_message = f"Курсовой спред: {rate_price_spread}%"
+
+                    full_message = (
+                        f"{message}{buy_message}{sell_message}{spread_message}"
+                    )
 
                     await bot.send_message(TELEGRAM_CHAT_ID, full_message)
                     print(full_message)
 
 
 async def run() -> None:
-    print(f"Минимальный спред: {MIN_SPREAD}%.\nМониторинг сделок...\n")
+    print(f"Минимальный спред: {MIN_SPREAD}%\nМониторинг сделок...\n")
 
     while True:
         get_funding_rates_data()
