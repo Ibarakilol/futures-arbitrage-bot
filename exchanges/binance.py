@@ -18,6 +18,7 @@ def get_binance_funding_rates() -> dict[str, dict[str, float]]:
             "index_price": float(funding_rate["indexPrice"]),
             "mark_price": float(funding_rate["markPrice"]),
             "next_funding_time": funding_rate["nextFundingTime"],
+            "predicted_funding_rate": "-",
         }
         for funding_rate in funding_rates.json()
     }

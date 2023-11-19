@@ -20,6 +20,7 @@ def get_bybit_funding_rates() -> dict[str, dict[str, float]]:
             "index_price": float(funding_rate["indexPrice"]),
             "mark_price": float(funding_rate["markPrice"]),
             "next_funding_time": float(funding_rate["nextFundingTime"]),
+            "predicted_funding_rate": "-",
         }
         for funding_rate in funding_rates.json()["result"]["list"]
         if "-" not in funding_rate["symbol"]
