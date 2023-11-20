@@ -1,3 +1,5 @@
+from typing import Union
+
 import requests
 
 
@@ -9,7 +11,7 @@ def get_binance_futures_trade_link(currency1: str, currency2: str) -> str:
     return f"https://www.binance.com/ru/futures/{currency1}{currency2}"
 
 
-def get_binance_funding_rates() -> dict[str, dict[str, float]]:
+def get_binance_funding_rates() -> dict[str, dict[str, Union[str, float]]]:
     funding_rates = requests.get("https://fapi.binance.com/fapi/v1/premiumIndex")
 
     return {

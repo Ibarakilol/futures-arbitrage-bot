@@ -5,17 +5,17 @@ import time
 from aiogram import Bot
 
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, MIN_SPREAD
-from exchanges import binance, bybit, kucoin, huobi
+from exchanges import binance, bybit, kucoin, huobi, okx
 from constants.funding_type import FUNDING_TYPE
 from utils.format_funding_time import format_funding_time
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
-symbols_data: dict[str, dict[str, dict[str, float]]] = {}
+symbols_data: dict[str, dict[str, dict[str, Union[str, float, int]]]] = {}
 
 
 def parse_funding_rates_data(
-    funding_rates_data: dict[str, dict[str, float]], exchange_name: str
+    funding_rates_data: dict[str, dict[str, Union[str, float, int]]], exchange_name: str
 ) -> None:
     for symbol, data in funding_rates_data.items():
         if MAIN_ASSET in symbol:
@@ -34,6 +34,8 @@ def get_futures_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
         return kucoin.get_kucoin_futures_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "huobi":
         return huobi.get_huobi_futures_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "okx":
+        return okx.get_okx_futures_trade_link(base_asset, MAIN_ASSET)
     else:
         return None
 
@@ -47,6 +49,8 @@ def get_spot_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
         return kucoin.get_kucoin_spot_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "huobi":
         return huobi.get_huobi_spot_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "okx":
+        return okx.get_okx_spot_trade_link(base_asset, MAIN_ASSET)
     else:
         return None
 
@@ -57,11 +61,13 @@ def get_funding_rates_data() -> None:
         bybit_funding_rates = bybit.get_bybit_funding_rates()
         kucoin_funding_rates = kucoin.get_kucoin_funding_rates()
         huobi_funding_rates = huobi.get_huobi_funding_rates()
+        okx_funding_rates = okx.get_okx_funding_rates()
 
         parse_funding_rates_data(binance_funding_rates, "binance")
         parse_funding_rates_data(bybit_funding_rates, "bybit")
         parse_funding_rates_data(kucoin_funding_rates, "kucoin")
         parse_funding_rates_data(huobi_funding_rates, "huobi")
+        parse_funding_rates_data(okx_funding_rates, "okx")
     except Exception as ex:
         print(f"Ошибка получения данных фандинга. {ex}")
 

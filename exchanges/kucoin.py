@@ -1,4 +1,5 @@
 import time
+from typing import Union
 
 import requests
 
@@ -11,7 +12,7 @@ def get_kucoin_futures_trade_link(currency1: str, currency2: str) -> str:
     return f"https://www.kucoin.com/ru/futures/trade/{currency1}{currency2}M"
 
 
-def get_kucoin_funding_rates() -> dict[str, dict[str, float]]:
+def get_kucoin_funding_rates() -> dict[str, dict[str, Union[int, float]]]:
     funding_rates = requests.get(
         "https://api-futures.kucoin.com/api/v1/contracts/active"
     )
