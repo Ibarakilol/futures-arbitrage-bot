@@ -8,6 +8,7 @@ from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, MIN_SPREAD
 from exchanges import binance, bybit, kucoin, huobi, mexc, okx
 from constants.funding_type import FUNDING_TYPE
 from utils.format_funding_time import format_funding_time
+from utils.get_current_time import get_current_time
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
@@ -176,10 +177,10 @@ async def run() -> None:
     print(f"Минимальный спред: {MIN_SPREAD}%")
 
     while True:
-        print("Поиск спредов...\n")
+        print(f"{get_current_time()} Поиск спредов...\n")
         get_funding_rates_data()
         await find_arbitrages()
-        print("Следующая итерация через 60 секунд...\n")
+        print(f"{get_current_time()} Следующая итерация через 60 секунд...\n")
         time.sleep(60)
 
 
