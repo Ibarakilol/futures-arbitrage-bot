@@ -5,7 +5,7 @@ import time
 from aiogram import Bot
 
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, MAIN_ASSET, MIN_SPREAD
-from exchanges import binance, bybit, kucoin, huobi, okx
+from exchanges import binance, bybit, kucoin, huobi, mexc, okx
 from constants.funding_type import FUNDING_TYPE
 from utils.format_funding_time import format_funding_time
 
@@ -34,6 +34,8 @@ def get_futures_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
         return kucoin.get_kucoin_futures_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "huobi":
         return huobi.get_huobi_futures_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "mexc":
+        return mexc.get_mexc_futures_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "okx":
         return okx.get_okx_futures_trade_link(base_asset, MAIN_ASSET)
     else:
@@ -49,6 +51,8 @@ def get_spot_trade_link(exchange: str, base_asset: str) -> Union[str, None]:
         return kucoin.get_kucoin_spot_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "huobi":
         return huobi.get_huobi_spot_trade_link(base_asset, MAIN_ASSET)
+    elif exchange == "mexc":
+        return mexc.get_mexc_spot_trade_link(base_asset, MAIN_ASSET)
     elif exchange == "okx":
         return okx.get_okx_spot_trade_link(base_asset, MAIN_ASSET)
     else:
@@ -61,12 +65,14 @@ def get_funding_rates_data() -> None:
         bybit_funding_rates = bybit.get_bybit_funding_rates()
         kucoin_funding_rates = kucoin.get_kucoin_funding_rates()
         huobi_funding_rates = huobi.get_huobi_funding_rates()
+        mexc_funding_rates = mexc.get_mexc_funding_rates()
         okx_funding_rates = okx.get_okx_funding_rates()
 
         parse_funding_rates_data(binance_funding_rates, "binance")
         parse_funding_rates_data(bybit_funding_rates, "bybit")
         parse_funding_rates_data(kucoin_funding_rates, "kucoin")
         parse_funding_rates_data(huobi_funding_rates, "huobi")
+        parse_funding_rates_data(mexc_funding_rates, "mexc")
         parse_funding_rates_data(okx_funding_rates, "okx")
     except Exception as ex:
         print(f"Ошибка получения данных фандинга. {ex}")
@@ -167,12 +173,14 @@ async def find_arbitrages() -> None:
 
 
 async def run() -> None:
-    print(f"Минимальный спред: {MIN_SPREAD}%\nМониторинг сделок...\n")
+    print(f"Минимальный спред: {MIN_SPREAD}%\n")
 
     while True:
+        print("Поиск спредов...")
         get_funding_rates_data()
         await find_arbitrages()
-        time.sleep(10)
+        print("Следующая итерация через 60 секунд...")
+        time.sleep(60)
 
 
 if __name__ == "__main__":
