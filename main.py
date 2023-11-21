@@ -173,13 +173,13 @@ async def find_arbitrages() -> None:
 
 
 async def run() -> None:
-    print(f"Минимальный спред: {MIN_SPREAD}%\n")
+    print(f"Минимальный спред: {MIN_SPREAD}%")
 
     while True:
-        print("Поиск спредов...")
+        print("Поиск спредов...\n")
         get_funding_rates_data()
         await find_arbitrages()
-        print("Следующая итерация через 60 секунд...")
+        print("Следующая итерация через 60 секунд...\n")
         time.sleep(60)
 
 
