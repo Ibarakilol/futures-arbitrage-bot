@@ -144,9 +144,10 @@ async def find_arbitrages() -> None:
             rate_spread = abs(rate_spread)
 
             if rate_spread >= MIN_SPREAD and buy_exchange != sell_exchange:
-                rate_price_spread = round(
-                    (sell_mark_price / buy_mark_price - 1) * 100, 2
-                )
+                if sell_mark_price and buy_mark_price:
+                    rate_price_spread = round(
+                        (sell_mark_price / buy_mark_price - 1) * 100, 2
+                    )
 
                 message = f"Пара: {base_asset}/{MAIN_ASSET}\n\n"
                 buy_message = f"Покупка(LONG) на {buy_exchange.capitalize()}\nТекущая ставка: {round(buy_funding_rate, 4)}% ({FUNDING_TYPE[buy_exchange]})\nПрогнозная ставка: {buy_predicted_funding_rate}%\nСледующая выплата: {buy_next_funding_time}\n{get_futures_trade_link(buy_exchange, base_asset)}\n\n"
@@ -158,9 +159,10 @@ async def find_arbitrages() -> None:
                 await bot.send_message(TELEGRAM_CHAT_ID, full_message)
                 print(full_message)
             elif sell_funding_rate >= MIN_SPREAD:
-                rate_price_spread = round(
-                    (sell_mark_price / best_index_price - 1) * 100, 2
-                )
+                if sell_mark_price and best_index_price:
+                    rate_price_spread = round(
+                        (sell_mark_price / best_index_price - 1) * 100, 2
+                    )
 
                 message = f"Пара: {base_asset}/{MAIN_ASSET}\n\n"
                 buy_message = f"Покупка(LONG) на {best_index_price_exchange.capitalize()}\n{get_spot_trade_link(best_index_price_exchange, base_asset)}\n\n"
