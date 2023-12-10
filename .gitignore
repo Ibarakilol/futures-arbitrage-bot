@@ -1,7 +1,5 @@
-# dependencies
-/venv
+/node_modules
 
-# misc
 .DS_Store
 .idea
 .env
