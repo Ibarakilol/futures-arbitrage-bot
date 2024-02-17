@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class KuCoin {
@@ -20,12 +21,13 @@ class KuCoin {
       return fundingRates.data
         .filter((fundingRate) => fundingRate.fundingFeeRate)
         .reduce(async (acc, fundingRate) => {
+          const symbol = fundingRate.symbol.slice(0, -1);
+
           try {
             const { data: fundingHistory } = await axios.get(
-              `https://www.kucoin.com/_api_kumex/web-front/contract/${fundingRate.symbol}/funding-rates?reverse=true&maxCount=1`
+              `https://www.kucoin.com/_api_kumex/web-front/contract/${symbol}M/funding-rates?reverse=true&maxCount=1`
             );
 
-            const symbol = fundingRate.symbol.slice(0, -1);
             const nextFundingTime = Date.now() + fundingRate.nextFundingRateTime;
             const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.dataList[0].timePoint);
 
@@ -44,11 +46,11 @@ class KuCoin {
               },
             };
           } catch (err) {
-            console.log(`Ошибка получения данных фандинга KuCoin. ${err?.message}`);
+            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.kucoin} (${symbol}). ${err?.message}`);
           }
         });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга KuCoin. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.kucoin}. ${err?.message}`);
     }
   }
 }

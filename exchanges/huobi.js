@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class Huobi {
@@ -51,7 +52,7 @@ class Huobi {
           };
         });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга Huobi. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.huobi}. ${err?.message}`);
     }
   }
 }

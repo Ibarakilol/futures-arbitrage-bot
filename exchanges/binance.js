@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getTimeString } = require('../utils');
 
 class Binance {
@@ -39,7 +40,7 @@ class Binance {
         };
       });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга Binance. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.binance}. ${err?.message}`);
     }
   }
 }

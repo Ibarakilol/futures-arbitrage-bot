@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class OKX {
@@ -28,9 +29,9 @@ class OKX {
         .map((instrument) => instrument.instId);
 
       return instrumentIds.reduce(async (acc, instrumentId) => {
-        try {
-          const symbol = this.formatInstrumentId(instrumentId);
+        const symbol = this.formatInstrumentId(instrumentId);
 
+        try {
           const { data: fundingRate } = await axios.get(
             `https://www.okx.com/api/v5/public/funding-rate?instId=${instrumentId}`
           );
@@ -60,11 +61,11 @@ class OKX {
             },
           };
         } catch (err) {
-          console.log(`Ошибка получения данных фандинга OKX. ${err?.message}`);
+          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.okx} (${symbol}). ${err?.message}`);
         }
       });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга OKX. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.okx}. ${err?.message}`);
     }
   }
 }

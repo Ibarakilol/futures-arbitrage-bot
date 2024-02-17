@@ -1,6 +1,11 @@
 function getFundingInterval(fundingTime, prevFundingTime) {
-  const duration = Math.abs(new Date(fundingTime).getTime() - new Date(prevFundingTime).getTime());
-  return Math.floor(duration / 1000 / 60 / 60);
+  if (fundingTime && prevFundingTime) {
+    const duration = Math.abs(new Date(fundingTime).getTime() - new Date(prevFundingTime).getTime());
+    const fundingInterval = Math.floor(duration / 1000 / 60 / 60);
+    return fundingInterval % 2 === 0 ? fundingInterval : fundingInterval + 1;
+  } else {
+    return 8;
+  }
 }
 
 function getTimeString(fundingTime) {

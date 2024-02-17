@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class MEXC {
@@ -17,6 +18,7 @@ class MEXC {
     try {
       const { data: contracts } = await axios.get('https://contract.mexc.com/api/v1/contract/detail');
 
+      // TODO: Optimize requests
       const symbols = contracts.data
         .filter((contract) => contract.symbol.split('_')[1] === 'USDT')
         .map((contract) => contract.symbol);
@@ -54,13 +56,13 @@ class MEXC {
             multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           };
         } catch (err) {
-          console.log(`Ошибка получения данных фандинга MEXC. ${err?.message}`);
+          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.mexc}. ${err?.message}`);
         }
       }
 
       return fundingRates;
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга MEXC. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.mexc}. ${err?.message}`);
     }
   }
 }

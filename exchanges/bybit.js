@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class Bybit {
@@ -22,9 +23,11 @@ class Bybit {
       return fundingRates.result.list
         .filter((fundingRate) => !fundingRate.symbol.includes('-'))
         .reduce(async (acc, fundingRate) => {
+          const symbol = fundingRate.symbol;
+
           try {
             const { data: fundingHistory } = await axios.get(
-              `https://api.bybit.com/derivatives/v3/public/funding/history-funding-rate?symbol=${fundingRate.symbol}&limit=1`
+              `https://api.bybit.com/derivatives/v3/public/funding/history-funding-rate?symbol=${symbol}&limit=1`
             );
 
             const nextFundingTime = parseInt(fundingRate.nextFundingTime);
@@ -35,24 +38,24 @@ class Bybit {
 
             return {
               ...(await acc),
-              [fundingRate.symbol.replace(/^10+/g, '')]: {
+              [symbol.replace(/^10+/g, '')]: {
                 fundingRate: formatFundingRate(fundingRate.fundingRate),
                 indexPrice: fundingRate.indexPrice,
                 markPrice: fundingRate.markPrice,
                 nextFundingTime: getTimeString(nextFundingTime),
                 fundingInterval,
                 predictedFundingRate: '-',
-                spotLink: this.getSpotTradeLink(fundingRate.symbol),
-                futuresLink: this.getFuturesTradeLink(fundingRate.symbol),
-                multiplier: fundingRate.symbol.match(/^10+/g)?.[0] ?? 1,
+                spotLink: this.getSpotTradeLink(symbol),
+                futuresLink: this.getFuturesTradeLink(symbol),
+                multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
               },
             };
           } catch (err) {
-            console.log(`Ошибка получения данных фандинга Bybit. ${err?.message}`);
+            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.bybit} (${symbol}). ${err?.message}`);
           }
         });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга Bybit. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.bybit}. ${err?.message}`);
     }
   }
 }

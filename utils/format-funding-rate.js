@@ -1,5 +1,5 @@
 function formatFundingRate(fundingRate) {
-  return parseFloat(fundingRate) * 100;
+  return fundingRate ? parseFloat(fundingRate) * 100 : '-';
 }
 
 module.exports = formatFundingRate;

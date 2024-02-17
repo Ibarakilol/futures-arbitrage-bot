@@ -6,9 +6,7 @@ const { EXCHANGE_NAME, FUNDING_TYPE } = require('./constants');
 const { getFundingRates } = require('./exchanges');
 const { getTimeString, sleep } = require('./utils');
 
-// 'binance', 'bybit', 'kucoin', 'mexc!', 'huobi', 'okx', 'coinex!'
-const EXCHANGES = ['binance', 'bybit', 'kucoin', 'huobi'];
-const MIN_SPREAD = 0.4;
+const MIN_SPREAD = 0.2;
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -29,7 +27,7 @@ let spotFuturesArbitrages = [];
 async function parseFundingRatesData() {
   const symbolsData = {};
 
-  for await (const exchange of EXCHANGES) {
+  for await (const exchange of Object.keys(EXCHANGE_NAME)) {
     try {
       const fundingRatesData = await getFundingRates(exchange);
 
@@ -68,16 +66,20 @@ function getArbitrageMessage(arbitrageData, type) {
 
   let buyMessage = '';
   if (type === 'futures') {
-    buyMessage = `📗Покупка(LONG) на ${EXCHANGE_NAME[buyOption.exchange]}\nТекущая: ${buyOption.fundingRate.toFixed(
-      4
-    )}% (${FUNDING_TYPE[buyOption.exchange]})\nПрогнозная: ${formattedBuyPredictedFundingRate}%\n🕐Следующая выплата: ${
-      buyOption.nextFundingTime
-    } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
+    buyMessage = `📗Покупка/LONG [${buyOption.markPrice}] на ${
+      EXCHANGE_NAME[buyOption.exchange]
+    }\nТекущая: ${buyOption.fundingRate.toFixed(4)}% (${
+      FUNDING_TYPE[buyOption.exchange]
+    })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\n🕐Следующая выплата: ${buyOption.nextFundingTime} (${
+      buyOption.fundingInterval
+    }ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === 'spot') {
-    buyMessage = `📗Покупка(LONG) на ${EXCHANGE_NAME[buyOption.exchange]}\n${buyOption.spotLink}\n\n`;
+    buyMessage = `📗Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
+      buyOption.spotLink
+    }\n\n`;
   }
 
-  const sellMessage = `📕Продажа(SHORT) на ${
+  const sellMessage = `📕Продажа/SHORT [${sellOption.markPrice}] на ${
     EXCHANGE_NAME[sellOption.exchange]
   }\nТекущая: ${sellOption.fundingRate.toFixed(4)}% (${
     FUNDING_TYPE[sellOption.exchange]
@@ -114,20 +116,20 @@ function findArbitrages(symbolsData) {
           }
         }
 
-        const buyMarkPrice = buyFuturesOption.markPrice;
-        const buyIndexPrice = buySpotOption.indexPrice;
-        const sellMarkPrice = sellFuturesOption.markPrice;
+        let buyMarkPrice = buyFuturesOption.markPrice;
+        let buyIndexPrice = buySpotOption.indexPrice;
+        let sellMarkPrice = sellFuturesOption.markPrice;
 
-        let markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
-        let indexPriceSpread = (sellMarkPrice / buyIndexPrice - 1) * 100;
-
-        if (buyFuturesOption.multiplier !== 1) {
-          markPriceSpread = markPriceSpread / buyFuturesOption.multiplier - buyFuturesOption.multiplier / 10;
-          indexPriceSpread = indexPriceSpread / buyFuturesOption.multiplier - buyFuturesOption.multiplier / 10;
-        } else if (sellFuturesOption.multiplier !== 1) {
-          markPriceSpread = markPriceSpread / sellFuturesOption.multiplier - sellFuturesOption.multiplier / 10;
-          indexPriceSpread = indexPriceSpread / sellFuturesOption.multiplier - sellFuturesOption.multiplier / 10;
+        if (buyFuturesOption.multiplier !== sellFuturesOption.multiplier) {
+          if (buyFuturesOption.multiplier !== 1) {
+            buyMarkPrice = buyMarkPrice / buyFuturesOption.multiplier;
+          } else if (sellFuturesOption.multiplier !== 1) {
+            sellMarkPrice = sellMarkPrice / sellFuturesOption.multiplier;
+          }
         }
+
+        const markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
+        const indexPriceSpread = (sellMarkPrice / buyIndexPrice - 1) * 100;
 
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&

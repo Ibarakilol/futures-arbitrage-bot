@@ -1,5 +1,6 @@
 const axios = require('axios');
 
+const { EXCHANGE_NAME } = require('../constants');
 const { formatFundingRate, getFundingInterval, getTimeString } = require('../utils');
 
 class CoinEx {
@@ -15,7 +16,8 @@ class CoinEx {
 
   getNextFundingTime(fundingTime) {
     const currentTimestamp = new Date();
-    currentTimestamp.setMinutes(currentTimestamp.getMinutes() + fundingTime);
+    const minutes = currentTimestamp.getMinutes() + fundingTime;
+    currentTimestamp.setMinutes(minutes % 60 === 0 ? minutes : minutes + 1);
     currentTimestamp.setSeconds(0);
     return currentTimestamp.setMilliseconds(0);
   }
@@ -50,11 +52,11 @@ class CoinEx {
               },
             };
           } catch (err) {
-            console.log(`Ошибка получения данных фандинга CoinEx. ${err?.message}`);
+            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.coinex} (${symbol}). ${err?.message}`);
           }
         });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга CoinEx. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.coinex}. ${err?.message}`);
     }
   }
 }
