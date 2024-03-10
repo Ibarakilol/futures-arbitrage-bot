@@ -18,7 +18,6 @@ class MEXC {
     try {
       const { data: contracts } = await axios.get('https://contract.mexc.com/api/v1/contract/detail');
 
-      // TODO: Optimize requests
       const symbols = contracts.data
         .filter((contract) => contract.symbol.split('_')[1] === 'USDT')
         .map((contract) => contract.symbol);
@@ -38,11 +37,10 @@ class MEXC {
             `https://contract.mexc.com/api/v1/contract/funding_rate/history?symbol=${symbol}&page_num=1&page_size=1`
           );
 
+          symbol = symbol.split('_').join('');
           const fundingRateData = fundingRate.data;
           const nextFundingTime = fundingRateData.nextSettleTime;
           const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.resultList[0].settleTime);
-
-          symbol = symbol.split('_').join('');
 
           fundingRates[symbol.replace(/^10+/g, '')] = {
             fundingRate: formatFundingRate(fundingRateData.fundingRate),
@@ -56,7 +54,7 @@ class MEXC {
             multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           };
         } catch (err) {
-          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.mexc}. ${err?.message}`);
+          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.mexc} (${symbol}). ${err?.message}`);
         }
       }
 
