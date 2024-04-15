@@ -35,7 +35,10 @@ class CoinEx {
             );
 
             const nextFundingTime = this.getNextFundingTime(fundingRate.funding_time);
-            const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.records[0].time * 1000);
+            const fundingInterval = getFundingInterval(
+              nextFundingTime,
+              fundingHistory.data.records[0]?.time && fundingHistory.data.records[0].time * 1000
+            );
 
             return {
               ...(await acc),

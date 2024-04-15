@@ -53,7 +53,7 @@ function getArbitrageMessage(arbitrageData, type) {
     return 'Спред не найден';
   }
 
-  const { symbol, buyOption, sellOption, rateSpread, priceSpread } = arbitrageData;
+  const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence } = arbitrageData;
 
   const formattedBuyPredictedFundingRate =
     typeof buyOption.predictedFundingRate === 'string'
@@ -70,9 +70,11 @@ function getArbitrageMessage(arbitrageData, type) {
       EXCHANGE_NAME[buyOption.exchange]
     }\nТекущая: ${buyOption.fundingRate.toFixed(4)}% (${
       FUNDING_TYPE[buyOption.exchange]
-    })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\n🕐Следующая выплата: ${buyOption.nextFundingTime} (${
-      buyOption.fundingInterval
-    }ч)\n${buyOption.futuresLink}\n\n`;
+    })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\nОтклонение ставки: ${arbitrageData.buyPriceDivergence.toFixed(
+      2
+    )}% ${buyOption.fundingRate > arbitrageData.buyPriceDivergence ? '⬇️' : '⬆️'}\n🕐Следующая выплата: ${
+      buyOption.nextFundingTime
+    } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === 'spot') {
     buyMessage = `📗Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
       buyOption.spotLink
@@ -83,9 +85,11 @@ function getArbitrageMessage(arbitrageData, type) {
     EXCHANGE_NAME[sellOption.exchange]
   }\nТекущая: ${sellOption.fundingRate.toFixed(4)}% (${
     FUNDING_TYPE[sellOption.exchange]
-  })\nПрогнозная: ${formattedSellPredictedFundingRate}%\n🕐Следующая выплата: ${sellOption.nextFundingTime} (${
-    sellOption.fundingInterval
-  }ч)\n${sellOption.futuresLink}\n\n`;
+  })\nПрогнозная: ${formattedSellPredictedFundingRate}%\nОтклонение ставки: ${sellPriceDivergence.toFixed(2)}% ${
+    sellOption.fundingRate > sellPriceDivergence ? '⬇️' : '⬆️'
+  }\n🕐Следующая выплата: ${sellOption.nextFundingTime} (${sellOption.fundingInterval}ч)\n${
+    sellOption.futuresLink
+  }\n\n`;
 
   return `Пара: ${symbol}\n\n${buyMessage}${sellMessage}💰Спред:\nТекущий: ${rateSpread.toFixed(
     2
@@ -117,8 +121,10 @@ function findArbitrages(symbolsData) {
         }
 
         let buyMarkPrice = buyFuturesOption.markPrice;
-        let buyIndexPrice = buySpotOption.indexPrice;
         let sellMarkPrice = sellFuturesOption.markPrice;
+        const buyIndexPrice = buyFuturesOption.indexPrice;
+        const sellIndexPrice = sellFuturesOption.indexPrice;
+        const buySpotIndexPrice = buySpotOption.indexPrice;
 
         if (buyFuturesOption.multiplier !== sellFuturesOption.multiplier) {
           if (buyFuturesOption.multiplier !== 1) {
@@ -129,12 +135,16 @@ function findArbitrages(symbolsData) {
         }
 
         const markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
-        const indexPriceSpread = (sellMarkPrice / buyIndexPrice - 1) * 100;
+        const indexPriceSpread = (sellMarkPrice / buySpotIndexPrice - 1) * 100;
+        const buyPriceDivergence = (buyMarkPrice / buyIndexPrice - 1) * 100;
+        const sellPriceDivergence = (sellMarkPrice / sellIndexPrice - 1) * 100;
 
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
           rateSpread >= MIN_SPREAD &&
-          (markPriceSpread > 0 || buyFuturesOption.fundingInterval !== 8 || sellFuturesOption.fundingInterval !== 8)
+          (markPriceSpread >= -rateSpread ||
+            buyFuturesOption.fundingInterval !== 8 ||
+            sellFuturesOption.fundingInterval !== 8)
         ) {
           const id = `${symbol}-${buyFuturesOption.exchange}-${sellFuturesOption.exchange}`;
 
@@ -145,12 +155,17 @@ function findArbitrages(symbolsData) {
             sellOption: sellFuturesOption,
             rateSpread,
             priceSpread: markPriceSpread,
+            buyPriceDivergence,
+            sellPriceDivergence,
           };
 
           newFuturesArbitrages.push(arbitrageData);
         }
 
-        if (sellFundingRate >= MIN_SPREAD && (indexPriceSpread > 0 || sellFuturesOption.fundingInterval !== 8)) {
+        if (
+          sellFundingRate >= MIN_SPREAD &&
+          (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
+        ) {
           const id = `${symbol}-${buySpotOption.exchange}-${sellFuturesOption.exchange}`;
 
           const arbitrageData = {
@@ -160,6 +175,7 @@ function findArbitrages(symbolsData) {
             sellOption: sellFuturesOption,
             rateSpread: sellFundingRate,
             priceSpread: indexPriceSpread,
+            sellPriceDivergence,
           };
 
           newSpotFuturesArbitrages.push(arbitrageData);
@@ -173,7 +189,9 @@ function findArbitrages(symbolsData) {
 }
 
 bot.command('spreads', (ctx) => {
-  bot.telegram.sendMessage(ctx.chat.id, 'Спреды фьчерсов', {
+  const message = futuresArbitrages.length ? 'Спреды фьчерсов' : 'Спреды фьчерсов не найдены';
+
+  bot.telegram.sendMessage(ctx.chat.id, message, {
     reply_markup: {
       inline_keyboard: futuresArbitrages.map((futuresArbitrage) => [mapArbitrageToButton(futuresArbitrage, 'futures')]),
     },
@@ -181,7 +199,9 @@ bot.command('spreads', (ctx) => {
 });
 
 bot.command('spot_futures', (ctx) => {
-  bot.telegram.sendMessage(ctx.chat.id, 'Спреды спот-фьчерсов', {
+  const message = spotFuturesArbitrages.length ? 'Спреды спот-фьчерсов' : 'Спреды спот-фьчерсов не найдены';
+
+  bot.telegram.sendMessage(ctx.chat.id, message, {
     reply_markup: {
       inline_keyboard: spotFuturesArbitrages.map((spotFuturesArbitrage) => [
         mapArbitrageToButton(spotFuturesArbitrage, 'spot'),
@@ -211,7 +231,7 @@ bot.action(/^(futures|spot)-\w+USDT-[a-z]{3,7}-[a-z]{3,7}$/, (ctx) => {
     console.log(
       `${getTimeString()}: Найдено арбитражных сделок: ${futuresArbitragesLength}, спот-фьчерс: ${spotFuturesArbitragesLength}`
     );
-    console.log(`${getTimeString()}: Следующая итерация через 60 секунд.`);
-    await sleep(60);
+    console.log(`${getTimeString()}: Следующая итерация через 3 минуты.`);
+    await sleep(180);
   }
 })();

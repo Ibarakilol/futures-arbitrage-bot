@@ -16,39 +16,39 @@ class KuCoin {
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get('https://api-futures.kucoin.com/api/v1/contracts/active');
+      const { data: contracts } = await axios.get('https://api-futures.kucoin.com/api/v1/contracts/active');
+      const fundingRates = {};
 
-      return fundingRates.data
-        .filter((fundingRate) => fundingRate.fundingFeeRate)
-        .reduce(async (acc, fundingRate) => {
-          const symbol = fundingRate.symbol.slice(0, -1);
+      for await (const contract of contracts.data) {
+        const symbol = contract.symbol.slice(0, -1);
 
+        if (typeof contract.fundingFeeRate === 'number') {
           try {
             const { data: fundingHistory } = await axios.get(
               `https://www.kucoin.com/_api_kumex/web-front/contract/${symbol}M/funding-rates?reverse=true&maxCount=1`
             );
 
-            const nextFundingTime = Date.now() + fundingRate.nextFundingRateTime;
+            const nextFundingTime = Date.now() + contract.nextFundingRateTime;
             const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.dataList[0].timePoint);
 
-            return {
-              ...(await acc),
-              [symbol.replace(/^10+/g, '')]: {
-                fundingRate: formatFundingRate(fundingRate.fundingFeeRate),
-                indexPrice: fundingRate.indexPrice,
-                markPrice: fundingRate.markPrice,
-                nextFundingTime: getTimeString(nextFundingTime),
-                fundingInterval,
-                predictedFundingRate: formatFundingRate(fundingRate.predictedFundingFeeRate),
-                spotLink: this.getSpotTradeLink(symbol),
-                futuresLink: this.getFuturesTradeLink(symbol),
-                multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
-              },
+            fundingRates[symbol.replace(/^10+/g, '')] = {
+              fundingRate: formatFundingRate(contract.fundingFeeRate),
+              indexPrice: contract.indexPrice,
+              markPrice: contract.markPrice,
+              nextFundingTime: getTimeString(nextFundingTime),
+              fundingInterval,
+              predictedFundingRate: formatFundingRate(contract.predictedFundingFeeRate),
+              spotLink: this.getSpotTradeLink(symbol),
+              futuresLink: this.getFuturesTradeLink(symbol),
+              multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
             };
           } catch (err) {
             console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.kucoin} (${symbol}). ${err?.message}`);
           }
-        });
+        }
+      }
+
+      return fundingRates;
     } catch (err) {
       console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.kucoin}. ${err?.message}`);
     }
