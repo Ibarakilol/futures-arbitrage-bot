@@ -50,7 +50,7 @@ async function parseFundingRatesData() {
 
 function getArbitrageMessage(arbitrageData, type) {
   if (!arbitrageData) {
-    return 'Спред не найден';
+    return 'Спред не найден.';
   }
 
   const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence } = arbitrageData;
@@ -126,6 +126,9 @@ function findArbitrages(symbolsData) {
         const sellIndexPrice = sellFuturesOption.indexPrice;
         const buySpotIndexPrice = buySpotOption.indexPrice;
 
+        const buyPriceDivergence = (buyMarkPrice / buyIndexPrice - 1) * 100;
+        const sellPriceDivergence = (sellMarkPrice / sellIndexPrice - 1) * 100;
+
         if (buyFuturesOption.multiplier !== sellFuturesOption.multiplier) {
           if (buyFuturesOption.multiplier !== 1) {
             buyMarkPrice = buyMarkPrice / buyFuturesOption.multiplier;
@@ -136,8 +139,6 @@ function findArbitrages(symbolsData) {
 
         const markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
         const indexPriceSpread = (sellMarkPrice / buySpotIndexPrice - 1) * 100;
-        const buyPriceDivergence = (buyMarkPrice / buyIndexPrice - 1) * 100;
-        const sellPriceDivergence = (sellMarkPrice / sellIndexPrice - 1) * 100;
 
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
@@ -189,7 +190,7 @@ function findArbitrages(symbolsData) {
 }
 
 bot.command('spreads', (ctx) => {
-  const message = futuresArbitrages.length ? 'Спреды фьчерсов' : 'Спреды фьчерсов не найдены';
+  const message = futuresArbitrages.length ? 'Спреды фьчерсов:' : 'Спреды фьчерсов не найдены.';
 
   bot.telegram.sendMessage(ctx.chat.id, message, {
     reply_markup: {
@@ -199,7 +200,7 @@ bot.command('spreads', (ctx) => {
 });
 
 bot.command('spot_futures', (ctx) => {
-  const message = spotFuturesArbitrages.length ? 'Спреды спот-фьчерсов' : 'Спреды спот-фьчерсов не найдены';
+  const message = spotFuturesArbitrages.length ? 'Спреды спот-фьчерсов:' : 'Спреды спот-фьчерсов не найдены.';
 
   bot.telegram.sendMessage(ctx.chat.id, message, {
     reply_markup: {
@@ -229,7 +230,7 @@ bot.action(/^(futures|spot)-\w+USDT-[a-z]{3,7}-[a-z]{3,7}$/, (ctx) => {
     const futuresArbitragesLength = futuresArbitrages.length;
     const spotFuturesArbitragesLength = spotFuturesArbitrages.length;
     console.log(
-      `${getTimeString()}: Найдено арбитражных сделок: ${futuresArbitragesLength}, спот-фьчерс: ${spotFuturesArbitragesLength}`
+      `${getTimeString()}: Найдено арбитражных сделок: ${futuresArbitragesLength}, спот-фьчерс: ${spotFuturesArbitragesLength}.`
     );
     console.log(`${getTimeString()}: Следующая итерация через 3 минуты.`);
     await sleep(180);
