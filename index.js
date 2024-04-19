@@ -165,7 +165,8 @@ function findArbitrages(symbolsData) {
 
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
-          (rateSpread >= MIN_SPREAD || predictedFundingRateSpread >= MIN_SPREAD) &&
+          rateSpread >= 0 &&
+          predictedFundingRateSpread >= MIN_SPREAD &&
           (markPriceSpread >= -rateSpread ||
             buyFuturesOption.fundingInterval !== 8 ||
             sellFuturesOption.fundingInterval !== 8)
@@ -188,7 +189,8 @@ function findArbitrages(symbolsData) {
         }
 
         if (
-          (sellFundingRate >= MIN_SPREAD || sellPredictedFundingRate >= MIN_SPREAD) &&
+          sellFundingRate >= 0 &&
+          sellPredictedFundingRate >= MIN_SPREAD &&
           (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
         ) {
           const id = `${symbol}-${buySpotOption.exchange}-${sellFuturesOption.exchange}`;
