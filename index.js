@@ -53,7 +53,8 @@ function getArbitrageMessage(arbitrageData, type) {
     return 'Спред не найден.';
   }
 
-  const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence } = arbitrageData;
+  const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence, predictedFundingRateSpread } =
+    arbitrageData;
 
   const formattedBuyPredictedFundingRate =
     typeof buyOption.predictedFundingRate === 'string'
@@ -93,7 +94,7 @@ function getArbitrageMessage(arbitrageData, type) {
 
   return `Пара: ${symbol}\n\n${buyMessage}${sellMessage}💰Спред:\nТекущий: ${rateSpread.toFixed(
     2
-  )}%\nКурсовой: ${priceSpread.toFixed(2)}%`;
+  )}%\nПрогнозный: ${predictedFundingRateSpread.toFixed(2)}%\nКурсовой: ${priceSpread.toFixed(2)}%`;
 }
 
 function findArbitrages(symbolsData) {
@@ -140,9 +141,31 @@ function findArbitrages(symbolsData) {
         const markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
         const indexPriceSpread = (sellMarkPrice / buySpotIndexPrice - 1) * 100;
 
+        const buyPredictedFundingRate =
+          typeof buyFuturesOption.predictedFundingRate === 'string'
+            ? buyPriceDivergence
+            : buyFuturesOption.predictedFundingRate;
+        const sellPredictedFundingRate =
+          typeof sellFuturesOption.predictedFundingRate === 'string'
+            ? sellPriceDivergence
+            : sellFuturesOption.predictedFundingRate;
+
+        let predictedFundingRateSpread = 0;
+
+        if (buyPredictedFundingRate < sellPredictedFundingRate) {
+          if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
+            predictedFundingRateSpread = Math.abs(buyPredictedFundingRate + -sellPredictedFundingRate);
+          } else if (
+            (buyPredictedFundingRate > 0 && sellPredictedFundingRate > 0) ||
+            (buyPredictedFundingRate < 0 && sellPredictedFundingRate < 0)
+          ) {
+            predictedFundingRateSpread = Math.abs(buyPredictedFundingRate - sellPredictedFundingRate);
+          }
+        }
+
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
-          rateSpread >= MIN_SPREAD &&
+          (rateSpread >= MIN_SPREAD || predictedFundingRateSpread >= MIN_SPREAD) &&
           (markPriceSpread >= -rateSpread ||
             buyFuturesOption.fundingInterval !== 8 ||
             sellFuturesOption.fundingInterval !== 8)
@@ -158,13 +181,14 @@ function findArbitrages(symbolsData) {
             priceSpread: markPriceSpread,
             buyPriceDivergence,
             sellPriceDivergence,
+            predictedFundingRateSpread,
           };
 
           newFuturesArbitrages.push(arbitrageData);
         }
 
         if (
-          sellFundingRate >= MIN_SPREAD &&
+          (sellFundingRate >= MIN_SPREAD || sellPredictedFundingRate >= MIN_SPREAD) &&
           (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
         ) {
           const id = `${symbol}-${buySpotOption.exchange}-${sellFuturesOption.exchange}`;
@@ -177,6 +201,7 @@ function findArbitrages(symbolsData) {
             rateSpread: sellFundingRate,
             priceSpread: indexPriceSpread,
             sellPriceDivergence,
+            predictedFundingRateSpread: sellPredictedFundingRate,
           };
 
           newSpotFuturesArbitrages.push(arbitrageData);
