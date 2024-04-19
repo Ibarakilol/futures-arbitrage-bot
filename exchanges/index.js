@@ -5,6 +5,7 @@ const mexc = require('./mexc');
 const huobi = require('./huobi');
 const okx = require('./okx');
 const coinex = require('./coinex');
+const bitget = require('./bitget');
 
 async function getFundingRates(exchange) {
   switch (exchange) {
@@ -22,6 +23,8 @@ async function getFundingRates(exchange) {
       return await okx.getFundingRates();
     case 'coinex':
       return await coinex.getFundingRates();
+    case 'bitget':
+      return await bitget.getFundingRates();
     default:
       return null;
   }

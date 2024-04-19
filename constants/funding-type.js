@@ -6,4 +6,5 @@ module.exports = {
   huobi: 'Плавающая',
   okx: 'Плавающая',
   coinex: 'Фиксируемая',
+  bitget: 'Фиксируемая',
 };

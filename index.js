@@ -72,7 +72,7 @@ function getArbitrageMessage(arbitrageData, type) {
       FUNDING_TYPE[buyOption.exchange]
     })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\nОтклонение ставки: ${arbitrageData.buyPriceDivergence.toFixed(
       2
-    )}% ${buyOption.fundingRate > arbitrageData.buyPriceDivergence ? '⬇️' : '⬆️'}\n🕐Следующая выплата: ${
+    )}% ${buyOption.fundingRate > arbitrageData.buyPriceDivergence ? '⬇️✅' : '⬆️❌'}\n🕐Следующая выплата: ${
       buyOption.nextFundingTime
     } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === 'spot') {
@@ -86,7 +86,7 @@ function getArbitrageMessage(arbitrageData, type) {
   }\nТекущая: ${sellOption.fundingRate.toFixed(4)}% (${
     FUNDING_TYPE[sellOption.exchange]
   })\nПрогнозная: ${formattedSellPredictedFundingRate}%\nОтклонение ставки: ${sellPriceDivergence.toFixed(2)}% ${
-    sellOption.fundingRate > sellPriceDivergence ? '⬇️' : '⬆️'
+    sellOption.fundingRate > sellPriceDivergence ? '⬇️❌' : '⬆️✅'
   }\n🕐Следующая выплата: ${sellOption.nextFundingTime} (${sellOption.fundingInterval}ч)\n${
     sellOption.futuresLink
   }\n\n`;
