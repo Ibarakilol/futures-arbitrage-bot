@@ -165,7 +165,7 @@ function findArbitrages(symbolsData) {
 
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
-          rateSpread >= 0 &&
+          rateSpread >= MIN_SPREAD &&
           predictedFundingRateSpread >= MIN_SPREAD &&
           (markPriceSpread >= -rateSpread ||
             buyFuturesOption.fundingInterval !== 8 ||
@@ -189,7 +189,7 @@ function findArbitrages(symbolsData) {
         }
 
         if (
-          sellFundingRate >= 0 &&
+          sellFundingRate >= MIN_SPREAD &&
           sellPredictedFundingRate >= MIN_SPREAD &&
           (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
         ) {
@@ -259,7 +259,7 @@ bot.action(/^(futures|spot)-\w+USDT-[a-z]{3,7}-[a-z]{3,7}$/, (ctx) => {
     console.log(
       `${getTimeString()}: Найдено арбитражных сделок: ${futuresArbitragesLength}, спот-фьчерс: ${spotFuturesArbitragesLength}.`
     );
-    console.log(`${getTimeString()}: Следующая итерация через 3 минуты.`);
-    await sleep(180);
+    console.log(`${getTimeString()}: Следующая итерация через 30 секунд.`);
+    await sleep(30);
   }
 })();

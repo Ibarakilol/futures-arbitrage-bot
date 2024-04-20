@@ -40,7 +40,7 @@ class MEXC {
           symbol = symbol.split('_').join('');
           const fundingRateData = fundingRate.data;
           const nextFundingTime = fundingRateData.nextSettleTime;
-          const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.resultList[0].settleTime);
+          const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.resultList[0]?.settleTime);
 
           fundingRates[symbol.replace(/^10+/g, '')] = {
             fundingRate: formatFundingRate(fundingRateData.fundingRate),
