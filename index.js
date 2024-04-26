@@ -133,7 +133,9 @@ function findArbitrages(symbolsData) {
         if (buyFuturesOption.multiplier !== sellFuturesOption.multiplier) {
           if (buyFuturesOption.multiplier !== 1) {
             buyMarkPrice = buyMarkPrice / buyFuturesOption.multiplier;
-          } else if (sellFuturesOption.multiplier !== 1) {
+          }
+
+          if (sellFuturesOption.multiplier !== 1) {
             sellMarkPrice = sellMarkPrice / sellFuturesOption.multiplier;
           }
         }
@@ -166,7 +168,7 @@ function findArbitrages(symbolsData) {
         if (
           buyFuturesOption.exchange !== sellFuturesOption.exchange &&
           rateSpread >= MIN_SPREAD &&
-          predictedFundingRateSpread >= MIN_SPREAD &&
+          predictedFundingRateSpread >= 0 &&
           (markPriceSpread >= -rateSpread ||
             buyFuturesOption.fundingInterval !== 8 ||
             sellFuturesOption.fundingInterval !== 8)
@@ -190,7 +192,7 @@ function findArbitrages(symbolsData) {
 
         if (
           sellFundingRate >= MIN_SPREAD &&
-          sellPredictedFundingRate >= MIN_SPREAD &&
+          sellPredictedFundingRate >= 0 &&
           (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
         ) {
           const id = `${symbol}-${buySpotOption.exchange}-${sellFuturesOption.exchange}`;
