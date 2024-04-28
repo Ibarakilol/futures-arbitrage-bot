@@ -33,7 +33,7 @@ class Binance {
             nextFundingTime: getTimeString(fundingRate.nextFundingTime),
             fundingInterval,
             predictedFundingRate: '-',
-            spotLink: this.getSpotTradeLink(fundingRate.symbol),
+            spotLink: this.getSpotTradeLink(fundingRate.symbol.replace(/^10+/g, '')),
             futuresLink: this.getFuturesTradeLink(fundingRate.symbol),
             multiplier: fundingRate.symbol.match(/^10+/g)?.[0] ?? 1,
           },

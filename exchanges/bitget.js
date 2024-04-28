@@ -36,7 +36,7 @@ class Bitget {
             nextFundingTime: getTimeString(fundingTime.fundingTime),
             fundingInterval: parseInt(fundingTime.ratePeriod),
             predictedFundingRate: '-',
-            spotLink: this.getSpotTradeLink(symbol),
+            spotLink: this.getSpotTradeLink(symbol.replace(/^10+/g, '')),
             futuresLink: this.getFuturesTradeLink(symbol),
             multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           };

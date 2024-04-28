@@ -45,7 +45,7 @@ class Huobi {
               nextFundingTime: getTimeString(nextFundingTime),
               fundingInterval,
               predictedFundingRate: formatFundingRate(fundingRate.estimated_rate),
-              spotLink: this.getSpotTradeLink(symbol),
+              spotLink: this.getSpotTradeLink(symbol.replace(/^10+/g, '')),
               futuresLink: this.getFuturesTradeLink(symbol),
               multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
             },
