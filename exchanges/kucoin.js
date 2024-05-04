@@ -35,7 +35,7 @@ class KuCoin {
               fundingRate: formatFundingRate(contract.fundingFeeRate),
               indexPrice: contract.indexPrice,
               markPrice: contract.markPrice,
-              nextFundingTime: getTimeString(nextFundingTime),
+              nextFundingTime: getTimeString(nextFundingTime, true),
               fundingInterval,
               predictedFundingRate: formatFundingRate(contract.predictedFundingFeeRate),
               spotLink: this.getSpotTradeLink(symbol.replace(/^10+/g, '')),

@@ -8,10 +8,10 @@ function getFundingInterval(fundingTime, prevFundingTime) {
   }
 }
 
-function getTimeString(fundingTime) {
+function getTimeString(fundingTime, isKucoin = false) {
   const date = fundingTime ? new Date(fundingTime) : new Date();
   const hours = date.getHours();
-  const minutes = `0${date.getMinutes()}`;
+  const minutes = `0${isKucoin ? 0 : date.getMinutes()}`;
   return `${hours}:${minutes.slice(-2)}`;
 }
 

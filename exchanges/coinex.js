@@ -17,7 +17,7 @@ class CoinEx {
   getNextFundingTime(fundingTime) {
     const currentTimestamp = new Date();
     const minutes = currentTimestamp.getMinutes() + fundingTime;
-    currentTimestamp.setMinutes(minutes % 60 === 0 ? minutes : minutes + 1);
+    currentTimestamp.setMinutes(minutes % 60 === 59 ? minutes + 1 : minutes % 60 === 1 ? minutes - 1 : minutes);
     currentTimestamp.setSeconds(0);
     return currentTimestamp.setMilliseconds(0);
   }
