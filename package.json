@@ -1,6 +1,6 @@
 {
   "name": "futures-arbitrage-bot",
-  "version": "1.0.0",
+  "version": "1.12.1",
   "description": "Telegram бот по поиску арбитражных сделок на фьючерсах",
   "main": "index.js",
   "scripts": {
@@ -10,9 +10,20 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.2",
+    "sequelize": "^6.37.3",
+    "sqlite3": "^5.1.7",
     "telegraf": "^3.38.0"
   },
   "devDependencies": {
     "dotenv": "^16.3.1"
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [
+          ".js"
+        ]
+      }
+    }
   }
 }

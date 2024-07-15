@@ -1,12 +1,12 @@
 require('dotenv').config();
-const { Telegraf, Extra } = require('telegraf');
+const { Telegraf } = require('telegraf');
 
 const { mapArbitrageToButton } = require('./adapters');
-const { EXCHANGE_NAME, FUNDING_TYPE } = require('./constants');
+const { ARBITRAGE_TYPE, EXCHANGE_NAME, FUNDING_TYPE, REGEX } = require('./constants');
 const { getFundingRates } = require('./exchanges');
 const { getTimeString, sleep } = require('./utils');
-
-const MIN_SPREAD = 0.2;
+const sequelize = require('./services/database.service');
+const requestAuth = require('./middleware/request-auth.middleware');
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -66,7 +66,7 @@ function getArbitrageMessage(arbitrageData, type) {
       : sellOption.predictedFundingRate.toFixed(4);
 
   let buyMessage = '';
-  if (type === 'futures') {
+  if (type === ARBITRAGE_TYPE.FUTURES) {
     buyMessage = `📗Покупка/LONG [${buyOption.markPrice}] на ${
       EXCHANGE_NAME[buyOption.exchange]
     }\nТекущая: ${buyOption.fundingRate.toFixed(4)}% (${
@@ -76,7 +76,7 @@ function getArbitrageMessage(arbitrageData, type) {
     )}% ${buyOption.fundingRate > arbitrageData.buyPriceDivergence ? '⬇️✅' : '⬆️❌'}\n🕐Следующая выплата: ${
       buyOption.nextFundingTime
     } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
-  } else if (type === 'spot') {
+  } else if (type === ARBITRAGE_TYPE.SPOT) {
     buyMessage = `📗Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
       buyOption.spotLink
     }\n\n`;
@@ -102,166 +102,212 @@ function findArbitrages(symbolsData) {
   const newSpotFuturesArbitrages = [];
 
   Object.entries(symbolsData).forEach(([symbol, data]) => {
-    if (data.length > 1) {
-      const sortedData = data.sort((a, b) => a.fundingRate - b.fundingRate);
-
-      sortedData.forEach((buyFuturesOption, idx) => {
-        const sellFuturesOption = data.sort((a, b) => b.fundingRate - a.fundingRate)[idx];
-        const buySpotOption = sortedData.sort((a, b) => a.indexPrice - b.indexPrice)[idx];
-
-        const buyFundingRate = buyFuturesOption.fundingRate;
-        const sellFundingRate = sellFuturesOption.fundingRate;
+    data.forEach((buyOption) => {
+      data.forEach((sellOption) => {
+        const buyFundingRate = buyOption.fundingRate;
+        const sellFundingRate = sellOption.fundingRate;
         let rateSpread = 0;
 
-        if (buyFundingRate < sellFundingRate) {
-          if (buyFundingRate < 0 && sellFundingRate > 0) {
-            rateSpread = Math.abs(buyFundingRate + -sellFundingRate);
-          } else if ((buyFundingRate > 0 && sellFundingRate > 0) || (buyFundingRate < 0 && sellFundingRate < 0)) {
-            rateSpread = Math.abs(buyFundingRate - sellFundingRate);
-          }
+        if (buyFundingRate < 0 && sellFundingRate > 0) {
+          rateSpread = Math.abs(buyFundingRate + -sellFundingRate);
+        } else if (buyFundingRate > 0 && sellFundingRate < 0) {
+          rateSpread = Math.abs(-buyFundingRate + sellFundingRate);
+        } else if ((buyFundingRate > 0 && sellFundingRate > 0) || (buyFundingRate < 0 && sellFundingRate < 0)) {
+          rateSpread = Math.abs(buyFundingRate - sellFundingRate);
         }
 
-        let buyMarkPrice = buyFuturesOption.markPrice;
-        let sellMarkPrice = sellFuturesOption.markPrice;
-        const buyIndexPrice = buyFuturesOption.indexPrice;
-        const sellIndexPrice = sellFuturesOption.indexPrice;
-        const buySpotIndexPrice = buySpotOption.indexPrice;
+        let buyMarkPrice = buyOption.markPrice;
+        let sellMarkPrice = sellOption.markPrice;
+        const buyIndexPrice = buyOption.indexPrice;
+        const sellIndexPrice = sellOption.indexPrice;
 
         const buyPriceDivergence = (buyMarkPrice / buyIndexPrice - 1) * 100;
         const sellPriceDivergence = (sellMarkPrice / sellIndexPrice - 1) * 100;
 
-        if (buyFuturesOption.multiplier !== sellFuturesOption.multiplier) {
-          if (buyFuturesOption.multiplier !== 1) {
-            buyMarkPrice = buyMarkPrice / buyFuturesOption.multiplier;
+        if (buyOption.multiplier !== sellOption.multiplier) {
+          if (buyOption.multiplier !== 1) {
+            buyMarkPrice = buyMarkPrice / buyOption.multiplier;
           }
 
-          if (sellFuturesOption.multiplier !== 1) {
-            sellMarkPrice = sellMarkPrice / sellFuturesOption.multiplier;
+          if (sellOption.multiplier !== 1) {
+            sellMarkPrice = sellMarkPrice / sellOption.multiplier;
           }
         }
 
         const markPriceSpread = (sellMarkPrice / buyMarkPrice - 1) * 100;
-        const indexPriceSpread = (sellMarkPrice / buySpotIndexPrice - 1) * 100;
+        const indexPriceSpread = (sellMarkPrice / buyIndexPrice - 1) * 100;
 
         const buyPredictedFundingRate =
-          typeof buyFuturesOption.predictedFundingRate === 'string'
-            ? buyPriceDivergence
-            : buyFuturesOption.predictedFundingRate;
+          typeof buyOption.predictedFundingRate === 'string' ? buyPriceDivergence : buyOption.predictedFundingRate;
         const sellPredictedFundingRate =
-          typeof sellFuturesOption.predictedFundingRate === 'string'
-            ? sellPriceDivergence
-            : sellFuturesOption.predictedFundingRate;
+          typeof sellOption.predictedFundingRate === 'string' ? sellPriceDivergence : sellOption.predictedFundingRate;
 
         let predictedFundingRateSpread = 0;
 
-        if (buyPredictedFundingRate < sellPredictedFundingRate) {
-          if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
-            predictedFundingRateSpread = Math.abs(buyPredictedFundingRate + -sellPredictedFundingRate);
-          } else if (
-            (buyPredictedFundingRate > 0 && sellPredictedFundingRate > 0) ||
-            (buyPredictedFundingRate < 0 && sellPredictedFundingRate < 0)
-          ) {
-            predictedFundingRateSpread = Math.abs(buyPredictedFundingRate - sellPredictedFundingRate);
-          }
+        if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
+          predictedFundingRateSpread = Math.abs(buyPredictedFundingRate + -sellPredictedFundingRate);
+        } else if (buyPredictedFundingRate > 0 && sellPredictedFundingRate < 0) {
+          predictedFundingRateSpread = Math.abs(-buyPredictedFundingRate + sellPredictedFundingRate);
+        } else if (
+          (buyPredictedFundingRate > 0 && sellPredictedFundingRate > 0) ||
+          (buyPredictedFundingRate < 0 && sellPredictedFundingRate < 0)
+        ) {
+          predictedFundingRateSpread = Math.abs(buyPredictedFundingRate - sellPredictedFundingRate);
         }
 
-        if (
-          buyFuturesOption.exchange !== sellFuturesOption.exchange &&
-          rateSpread >= MIN_SPREAD &&
-          predictedFundingRateSpread >= 0 &&
-          (markPriceSpread >= -rateSpread ||
-            buyFuturesOption.fundingInterval !== 8 ||
-            sellFuturesOption.fundingInterval !== 8)
-        ) {
-          const id = `${symbol}-${buyFuturesOption.exchange}-${sellFuturesOption.exchange}`;
-
-          const arbitrageData = {
-            id,
+        if (buyOption.exchange !== sellOption.exchange) {
+          newFuturesArbitrages.push({
+            id: `${symbol}-${buyOption.exchange}-${sellOption.exchange}`,
             symbol,
-            buyOption: buyFuturesOption,
-            sellOption: sellFuturesOption,
+            buyOption,
+            sellOption,
             rateSpread,
             priceSpread: markPriceSpread,
             buyPriceDivergence,
             sellPriceDivergence,
+            buyPredictedFundingRate,
+            sellPredictedFundingRate,
             predictedFundingRateSpread,
-          };
-
-          newFuturesArbitrages.push(arbitrageData);
+          });
         }
 
-        if (
-          sellFundingRate >= MIN_SPREAD &&
-          sellPredictedFundingRate >= 0 &&
-          (indexPriceSpread >= -Math.abs(sellFundingRate) || sellFuturesOption.fundingInterval !== 8)
-        ) {
-          const id = `${symbol}-${buySpotOption.exchange}-${sellFuturesOption.exchange}`;
-
-          const arbitrageData = {
-            id,
-            symbol,
-            buyOption: buySpotOption,
-            sellOption: sellFuturesOption,
-            rateSpread: sellFundingRate,
-            priceSpread: indexPriceSpread,
-            sellPriceDivergence,
-            predictedFundingRateSpread: sellPredictedFundingRate,
-          };
-
-          newSpotFuturesArbitrages.push(arbitrageData);
-        }
+        newSpotFuturesArbitrages.push({
+          id: `${symbol}-${buyOption.exchange}-${sellOption.exchange}`,
+          symbol,
+          buyOption,
+          sellOption,
+          rateSpread: sellFundingRate,
+          priceSpread: indexPriceSpread,
+          sellPriceDivergence,
+          predictedFundingRateSpread: sellPredictedFundingRate,
+        });
       });
-    }
+    });
   });
 
   futuresArbitrages = newFuturesArbitrages.sort((a, b) => b.rateSpread - a.rateSpread);
   spotFuturesArbitrages = newSpotFuturesArbitrages.sort((a, b) => b.rateSpread - a.rateSpread);
 }
 
-bot.command('spreads', (ctx) => {
-  const message = futuresArbitrages.length ? 'Спреды фьчерсов:' : 'Спреды фьчерсов не найдены.';
+bot.command('spreads', async (ctx) => {
+  const user = await requestAuth(ctx.chat.username);
 
-  bot.telegram.sendMessage(ctx.chat.id, message, {
-    reply_markup: {
-      inline_keyboard: futuresArbitrages.map((futuresArbitrage) => [mapArbitrageToButton(futuresArbitrage, 'futures')]),
-    },
-  });
+  if (!user) {
+    ctx.reply('Доступа к боту нет.');
+  } else {
+    const arbitrages = futuresArbitrages.filter(
+      (futuresArbitrage) =>
+        futuresArbitrage.rateSpread >= user.min_spread &&
+        futuresArbitrage.buyOption.fundingRate < futuresArbitrage.sellOption.fundingRate &&
+        (futuresArbitrage.priceSpread >= -futuresArbitrage.rateSpread ||
+          futuresArbitrage.buyOption.fundingInterval !== 8 ||
+          futuresArbitrage.sellOption.fundingInterval !== 8)
+    );
+
+    ctx.reply(arbitrages.length ? 'Спреды фьчерсов:' : 'Спреды фьчерсов не найдены.', {
+      reply_markup: {
+        inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.FUTURES)]),
+      },
+    });
+  }
 });
 
-bot.command('spot_futures', (ctx) => {
-  const message = spotFuturesArbitrages.length ? 'Спреды спот-фьчерсов:' : 'Спреды спот-фьчерсов не найдены.';
+bot.command('spot_futures', async (ctx) => {
+  const user = await requestAuth(ctx.chat.username);
 
-  bot.telegram.sendMessage(ctx.chat.id, message, {
-    reply_markup: {
-      inline_keyboard: spotFuturesArbitrages.map((spotFuturesArbitrage) => [
-        mapArbitrageToButton(spotFuturesArbitrage, 'spot'),
-      ]),
-    },
-  });
+  if (!user) {
+    ctx.reply('Доступа к боту нет.');
+  } else {
+    const arbitrages = spotFuturesArbitrages.filter(
+      (spotFuturesArbitrage) =>
+        spotFuturesArbitrage.rateSpread >= user.min_spread &&
+        (spotFuturesArbitrage.priceSpread >= -spotFuturesArbitrage.rateSpread ||
+          spotFuturesArbitrage.sellOption.fundingInterval !== 8)
+    );
+
+    ctx.reply(arbitrages.length ? 'Спреды спот-фьчерсов:' : 'Спреды спот-фьчерсов не найдены.', {
+      reply_markup: {
+        inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.SPOT)]),
+      },
+    });
+  }
 });
 
-bot.action(/^(futures|spot)-\w+USDT-[a-z]{3,7}-[a-z]{3,7}$/, (ctx) => {
+bot.action(REGEX.SPREAD, (ctx) => {
   const id = ctx.match[0].split('-').slice(1).join('-');
   const type = ctx.match[0].split('-')[0];
-  const detailedArbitrage = futuresArbitrages.concat(spotFuturesArbitrages).find((arbitrage) => arbitrage.id === id);
+  const detailedArbitrage =
+    type === ARBITRAGE_TYPE.FUTURES
+      ? futuresArbitrages.find((futuresArbitrage) => futuresArbitrage.id === id)
+      : spotFuturesArbitrages.find((spotFuturesArbitrage) => spotFuturesArbitrage.id === id);
 
-  ctx.reply(getArbitrageMessage(detailedArbitrage, type), Extra.webPreview(false));
+  ctx.reply(getArbitrageMessage(detailedArbitrage, type), {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Обновить',
+            callback_data: `refresh-${ctx.match[0]}`,
+          },
+        ],
+      ],
+    },
+    disable_web_page_preview: true,
+  });
+});
+
+bot.action(REGEX.REFRESH_SPREAD, (ctx) => {
+  const id = ctx.match[0].split('-').slice(2).join('-');
+  const type = ctx.match[0].split('-')[1];
+  const detailedArbitrage =
+    type === ARBITRAGE_TYPE.FUTURES
+      ? futuresArbitrages.find((futuresArbitrage) => futuresArbitrage.id === id)
+      : spotFuturesArbitrages.find((spotFuturesArbitrage) => spotFuturesArbitrage.id === id);
+  const arbitrageMessage = getArbitrageMessage(detailedArbitrage, type);
+
+  if (arbitrageMessage !== ctx.callbackQuery.message.text) {
+    ctx.editMessageText(arbitrageMessage, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: 'Обновить',
+              callback_data: ctx.match[0],
+            },
+          ],
+        ],
+      },
+      disable_web_page_preview: true,
+    });
+  }
+});
+
+bot.on('message', async (ctx) => {
+  const user = await requestAuth(ctx.chat.username);
+
+  if (!user) {
+    ctx.reply('Доступа к боту нет.');
+  } else {
+    ctx.reply('Неверная команда.');
+  }
 });
 
 (async function () {
-  bot.launch();
+  try {
+    bot.launch();
 
-  while (true) {
-    console.log(`${getTimeString()}: Поиск спредов...`);
-    const symbolsData = await parseFundingRatesData();
-    findArbitrages(symbolsData);
+    await sequelize.authenticate();
+    await sequelize.sync();
 
-    const futuresArbitragesLength = futuresArbitrages.length;
-    const spotFuturesArbitragesLength = spotFuturesArbitrages.length;
-    console.log(
-      `${getTimeString()}: Найдено арбитражных сделок: ${futuresArbitragesLength}, спот-фьчерс: ${spotFuturesArbitragesLength}.`
-    );
-    console.log(`${getTimeString()}: Следующая итерация через 30 секунд.`);
-    await sleep(30);
+    while (true) {
+      console.log(`${getTimeString()}: Поиск спредов...`);
+      const symbolsData = await parseFundingRatesData();
+      findArbitrages(symbolsData);
+      console.log(`${getTimeString()}: Поиск закончен. Следующая итерация через 30 секунд.`);
+      await sleep(30);
+    }
+  } catch (err) {
+    console.log(err);
+    await sequelize.close();
   }
 })();
