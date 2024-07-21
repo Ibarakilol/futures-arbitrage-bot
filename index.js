@@ -67,7 +67,7 @@ function getArbitrageMessage(arbitrageData, type) {
 
   let buyMessage = '';
   if (type === ARBITRAGE_TYPE.FUTURES) {
-    buyMessage = `📗Покупка/LONG [${buyOption.markPrice}] на ${
+    buyMessage = `📕Покупка/LONG [${buyOption.markPrice}] на ${
       EXCHANGE_NAME[buyOption.exchange]
     }\nТекущая: ${buyOption.fundingRate.toFixed(4)}% (${
       FUNDING_TYPE[buyOption.exchange]
@@ -77,12 +77,12 @@ function getArbitrageMessage(arbitrageData, type) {
       buyOption.nextFundingTime
     } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === ARBITRAGE_TYPE.SPOT) {
-    buyMessage = `📗Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
+    buyMessage = `📕Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
       buyOption.spotLink
     }\n\n`;
   }
 
-  const sellMessage = `📕Продажа/SHORT [${sellOption.markPrice}] на ${
+  const sellMessage = `📗Продажа/SHORT [${sellOption.markPrice}] на ${
     EXCHANGE_NAME[sellOption.exchange]
   }\nТекущая: ${sellOption.fundingRate.toFixed(4)}% (${
     FUNDING_TYPE[sellOption.exchange]
@@ -142,7 +142,7 @@ function findArbitrages(symbolsData) {
         const sellPredictedFundingRate =
           typeof sellOption.predictedFundingRate === 'string' ? sellPriceDivergence : sellOption.predictedFundingRate;
 
-        let predictedFundingRateSpread = 0;
+        let predictedFundingRateSpread = !!buyPredictedFundingRate ? buyPredictedFundingRate : sellPredictedFundingRate;
 
         if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
           predictedFundingRateSpread = Math.abs(buyPredictedFundingRate + -sellPredictedFundingRate);

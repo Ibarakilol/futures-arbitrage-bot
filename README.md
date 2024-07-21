@@ -17,7 +17,7 @@ $ cd futures-arbitrage-bot
 $ npm i
 ```
 
-3. Переименовать файл `.env.example` в `.env` и заполнить TELEGRAM_BOT_TOKEN
+3. Переименовать файл `.env.example` в `.env`, заполнить TELEGRAM_BOT_TOKEN и в файле `db.json` указать свой username, и желаемый спред (как на примере)
 4. Запуск
 
 ```
