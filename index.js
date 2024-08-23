@@ -48,13 +48,13 @@ async function parseFundingRatesData() {
   return symbolsData;
 }
 
-function getArbitrageMessage(arbitrageData, type) {
-  if (!arbitrageData) {
+function getArbitrageMessage(arbitrage, type) {
+  if (!arbitrage) {
     return 'Спред не найден.';
   }
 
   const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence, predictedFundingRateSpread } =
-    arbitrageData;
+    arbitrage;
 
   const formattedBuyPredictedFundingRate =
     typeof buyOption.predictedFundingRate === 'string'
@@ -71,9 +71,9 @@ function getArbitrageMessage(arbitrageData, type) {
       EXCHANGE_NAME[buyOption.exchange]
     }\nТекущая: ${buyOption.fundingRate.toFixed(4)}% (${
       FUNDING_TYPE[buyOption.exchange]
-    })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\nОтклонение ставки: ${arbitrageData.buyPriceDivergence.toFixed(
+    })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\nОтклонение ставки: ${arbitrage.buyPriceDivergence.toFixed(
       2
-    )}% ${buyOption.fundingRate > arbitrageData.buyPriceDivergence ? '⬇️✅' : '⬆️❌'}\n🕐Следующая выплата: ${
+    )}% ${buyOption.fundingRate > arbitrage.buyPriceDivergence ? '⬇️✅' : '⬆️❌'}\n🕐Следующая выплата: ${
       buyOption.nextFundingTime
     } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === ARBITRAGE_TYPE.SPOT) {
@@ -192,9 +192,7 @@ function findArbitrages(symbolsData) {
 bot.command('spreads', async (ctx) => {
   const user = await requestAuth(ctx.chat.username);
 
-  if (!user) {
-    ctx.reply('Доступа к боту нет.');
-  } else {
+  if (user) {
     const arbitrages = futuresArbitrages.filter(
       (futuresArbitrage) =>
         futuresArbitrage.rateSpread >= user.min_spread &&
@@ -209,15 +207,15 @@ bot.command('spreads', async (ctx) => {
         inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.FUTURES)]),
       },
     });
+  } else {
+    ctx.reply('Доступа к боту нет.');
   }
 });
 
 bot.command('spot_futures', async (ctx) => {
   const user = await requestAuth(ctx.chat.username);
 
-  if (!user) {
-    ctx.reply('Доступа к боту нет.');
-  } else {
+  if (user) {
     const arbitrages = spotFuturesArbitrages.filter(
       (spotFuturesArbitrage) =>
         spotFuturesArbitrage.rateSpread >= user.min_spread &&
@@ -230,6 +228,8 @@ bot.command('spot_futures', async (ctx) => {
         inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.SPOT)]),
       },
     });
+  } else {
+    ctx.reply('Доступа к боту нет.');
   }
 });
 
@@ -285,10 +285,10 @@ bot.action(REGEX.REFRESH_SPREAD, (ctx) => {
 bot.on('message', async (ctx) => {
   const user = await requestAuth(ctx.chat.username);
 
-  if (!user) {
-    ctx.reply('Доступа к боту нет.');
-  } else {
+  if (user) {
     ctx.reply('Неверная команда.');
+  } else {
+    ctx.reply('Доступа к боту нет.');
   }
 });
 
@@ -303,8 +303,8 @@ bot.on('message', async (ctx) => {
       console.log(`${getTimeString()}: Поиск спредов...`);
       const symbolsData = await parseFundingRatesData();
       findArbitrages(symbolsData);
-      console.log(`${getTimeString()}: Поиск закончен. Следующая итерация через 30 секунд.`);
-      await sleep(30);
+      console.log(`${getTimeString()}: Поиск закончен. Следующая итерация через 10 секунд.`);
+      await sleep(10);
     }
   } catch (err) {
     console.log(err);
