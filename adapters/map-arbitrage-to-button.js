@@ -13,9 +13,9 @@ function mapArbitrageToButton(arbitrage, type) {
   }
 
   return {
-    text: `${arbitrage.symbol}: ${arbitrage.rateSpread.toFixed(2)}% | ${arbitrage.priceSpread.toFixed(
+    text: `${arbitrage.symbol}: ${arbitrage.rateSpread.toFixed(
       2
-    )}% курс${nonStandartInterval}`,
+    )}% | ${arbitrage.priceSpread.toFixed(2)}% курс${nonStandartInterval}`,
     callback_data: `${type}-${arbitrage.id}`,
   };
 }

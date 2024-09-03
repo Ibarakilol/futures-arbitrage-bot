@@ -17,14 +17,18 @@ class CoinEx {
   getNextFundingTime(fundingTime) {
     const currentTimestamp = new Date();
     const minutes = currentTimestamp.getMinutes() + fundingTime;
-    currentTimestamp.setMinutes(minutes % 60 === 59 ? minutes + 1 : minutes % 60 === 1 ? minutes - 1 : minutes);
+    currentTimestamp.setMinutes(
+      minutes % 60 === 59 ? minutes + 1 : minutes % 60 === 1 ? minutes - 1 : minutes
+    );
     currentTimestamp.setSeconds(0);
     return currentTimestamp.setMilliseconds(0);
   }
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get('https://api.coinex.com/perpetual/v1/market/ticker/all');
+      const { data: fundingRates } = await axios.get(
+        'https://api.coinex.com/perpetual/v1/market/ticker/all'
+      );
 
       return Object.entries(fundingRates.data.ticker)
         .filter(([symbol]) => !symbol.includes('_'))
@@ -55,7 +59,9 @@ class CoinEx {
               },
             };
           } catch (err) {
-            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.coinex} (${symbol}). ${err?.message}`);
+            console.log(
+              `Ошибка обработки данных фандинга ${EXCHANGE_NAME.coinex} (${symbol}). ${err?.message}`
+            );
           }
         });
     } catch (err) {

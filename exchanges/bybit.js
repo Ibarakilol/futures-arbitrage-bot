@@ -51,7 +51,9 @@ class Bybit {
               },
             };
           } catch (err) {
-            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.bybit} (${symbol}). ${err?.message}`);
+            console.log(
+              `Ошибка обработки данных фандинга ${EXCHANGE_NAME.bybit} (${symbol}). ${err?.message}`
+            );
           }
         });
     } catch (err) {

@@ -6,8 +6,16 @@
   "scripts": {
     "start": "node index.js"
   },
-  "author": "Ibarakilol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ibarakilol/futures-arbitrage-bot.git"
+  },
+  "author": "Nikita Lopanov",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ibarakilol/futures-arbitrage-bot/issues"
+  },
+  "homepage": "https://github.com/Ibarakilol/futures-arbitrage-bot#readme",
   "dependencies": {
     "axios": "^1.6.2",
     "sequelize": "^6.37.3",

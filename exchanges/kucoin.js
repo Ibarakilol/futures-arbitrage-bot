@@ -16,7 +16,9 @@ class KuCoin {
 
   async getFundingRates() {
     try {
-      const { data: contracts } = await axios.get('https://api-futures.kucoin.com/api/v1/contracts/active');
+      const { data: contracts } = await axios.get(
+        'https://api-futures.kucoin.com/api/v1/contracts/active'
+      );
       const fundingRates = {};
 
       for await (const contract of contracts.data) {
@@ -29,7 +31,10 @@ class KuCoin {
             );
 
             const nextFundingTime = Date.now() + contract.nextFundingRateTime;
-            const fundingInterval = getFundingInterval(nextFundingTime, fundingHistory.data.dataList[0].timePoint);
+            const fundingInterval = getFundingInterval(
+              nextFundingTime,
+              fundingHistory.data.dataList[0].timePoint
+            );
 
             fundingRates[symbol.replace(/^10+/g, '')] = {
               fundingRate: formatFundingRate(contract.fundingFeeRate),
@@ -43,7 +48,9 @@ class KuCoin {
               multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
             };
           } catch (err) {
-            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.kucoin} (${symbol}). ${err?.message}`);
+            console.log(
+              `Ошибка обработки данных фандинга ${EXCHANGE_NAME.kucoin} (${symbol}). ${err?.message}`
+            );
           }
         }
       }

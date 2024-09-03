@@ -41,7 +41,9 @@ class Bitget {
             multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           };
         } catch (err) {
-          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.bitget} (${symbol}). ${err?.message}`);
+          console.log(
+            `Ошибка обработки данных фандинга ${EXCHANGE_NAME.bitget} (${symbol}). ${err?.message}`
+          );
         }
 
         return fundingRates;
