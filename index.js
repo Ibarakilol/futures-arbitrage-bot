@@ -159,9 +159,9 @@ function findArbitrages(symbolsData) {
             ? sellPriceDivergence
             : sellOption.predictedFundingRate;
 
-        let predictedFundingRateSpread = !!buyPredictedFundingRate
-          ? buyPredictedFundingRate
-          : sellPredictedFundingRate;
+        let predictedFundingRateSpread = Math.abs(
+          !!buyPredictedFundingRate ? buyPredictedFundingRate : sellPredictedFundingRate
+        );
 
         if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
           predictedFundingRateSpread = Math.abs(

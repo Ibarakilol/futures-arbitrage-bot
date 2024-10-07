@@ -17,7 +17,7 @@ $ cd futures-arbitrage-bot
 $ npm i
 ```
 
-3. Переименовать файл `.env.example` в `.env`, заполнить TELEGRAM_BOT_TOKEN и указать свой ник Telegram в SUPERUSER
+3. Переименовать файл `.env.example` в `.env`, указать свой ник Telegram в SUPERUSER и заполнить TELEGRAM_BOT_TOKEN
 4. Запуск
 
 ```

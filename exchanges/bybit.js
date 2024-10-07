@@ -17,7 +17,7 @@ class Bybit {
   async getFundingRates() {
     try {
       const { data: fundingRates } = await axios.get(
-        'https://api.bybit.com/derivatives/v3/public/tickers?category=linear'
+        'https://api.bybit.com/v5/market/tickers?category=linear'
       );
 
       return fundingRates.result.list
@@ -27,7 +27,7 @@ class Bybit {
 
           try {
             const { data: fundingHistory } = await axios.get(
-              `https://api.bybit.com/derivatives/v3/public/funding/history-funding-rate?symbol=${symbol}&limit=1`
+              `https://api.bybit.com/v5/market/funding/history?category=linear&symbol=${symbol}&limit=1`
             );
 
             const nextFundingTime = parseInt(fundingRate.nextFundingTime);
