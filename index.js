@@ -119,14 +119,14 @@ function findArbitrages(symbolsData) {
         let rateSpread = 0;
 
         if (buyFundingRate < 0 && sellFundingRate > 0) {
-          rateSpread = Math.abs(buyFundingRate + -sellFundingRate);
+          rateSpread = buyFundingRate + -sellFundingRate;
         } else if (buyFundingRate > 0 && sellFundingRate < 0) {
-          rateSpread = Math.abs(-buyFundingRate + sellFundingRate);
+          rateSpread = -buyFundingRate + sellFundingRate;
         } else if (
           (buyFundingRate > 0 && sellFundingRate > 0) ||
           (buyFundingRate < 0 && sellFundingRate < 0)
         ) {
-          rateSpread = Math.abs(buyFundingRate - sellFundingRate);
+          rateSpread = buyFundingRate - sellFundingRate;
         }
 
         let buyMarkPrice = buyOption.markPrice;
@@ -159,23 +159,19 @@ function findArbitrages(symbolsData) {
             ? sellPriceDivergence
             : sellOption.predictedFundingRate;
 
-        let predictedFundingRateSpread = Math.abs(
-          !!buyPredictedFundingRate ? buyPredictedFundingRate : sellPredictedFundingRate
-        );
+        let predictedFundingRateSpread = !!buyPredictedFundingRate
+          ? buyPredictedFundingRate
+          : sellPredictedFundingRate;
 
         if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
-          predictedFundingRateSpread = Math.abs(
-            buyPredictedFundingRate + -sellPredictedFundingRate
-          );
+          predictedFundingRateSpread = buyPredictedFundingRate + -sellPredictedFundingRate;
         } else if (buyPredictedFundingRate > 0 && sellPredictedFundingRate < 0) {
-          predictedFundingRateSpread = Math.abs(
-            -buyPredictedFundingRate + sellPredictedFundingRate
-          );
+          predictedFundingRateSpread = -buyPredictedFundingRate + sellPredictedFundingRate;
         } else if (
           (buyPredictedFundingRate > 0 && sellPredictedFundingRate > 0) ||
           (buyPredictedFundingRate < 0 && sellPredictedFundingRate < 0)
         ) {
-          predictedFundingRateSpread = Math.abs(buyPredictedFundingRate - sellPredictedFundingRate);
+          predictedFundingRateSpread = buyPredictedFundingRate - sellPredictedFundingRate;
         }
 
         if (buyOption.exchange !== sellOption.exchange) {
@@ -184,13 +180,13 @@ function findArbitrages(symbolsData) {
             symbol,
             buyOption,
             sellOption,
-            rateSpread,
+            rateSpread: Math.abs(rateSpread),
             priceSpread: markPriceSpread,
             buyPriceDivergence,
             sellPriceDivergence,
             buyPredictedFundingRate,
             sellPredictedFundingRate,
-            predictedFundingRateSpread,
+            predictedFundingRateSpread: Math.abs(predictedFundingRateSpread),
           });
         }
 
