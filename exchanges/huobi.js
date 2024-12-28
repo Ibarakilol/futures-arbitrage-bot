@@ -16,15 +16,9 @@ class Huobi {
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get(
-        'https://api.hbdm.com/linear-swap-api/v1/swap_batch_funding_rate'
-      );
-      const { data: indexPrices } = await axios.get(
-        'https://api.hbdm.com/linear-swap-api/v1/swap_index'
-      );
-      const { data: markPrices } = await axios.get(
-        'https://api.hbdm.com/linear-swap-ex/market/detail/batch_merged'
-      );
+      const { data: fundingRates } = await axios.get('https://api.hbdm.com/linear-swap-api/v1/swap_batch_funding_rate');
+      const { data: indexPrices } = await axios.get('https://api.hbdm.com/linear-swap-api/v1/swap_index');
+      const { data: markPrices } = await axios.get('https://api.hbdm.com/linear-swap-ex/market/detail/batch_merged');
 
       return fundingRates.data
         .filter((fundingRate) => fundingRate.funding_rate)
@@ -40,10 +34,7 @@ class Huobi {
           ).close;
 
           const nextFundingTime = parseInt(fundingRate.funding_time);
-          const fundingInterval = getFundingInterval(
-            nextFundingTime,
-            parseInt(fundingRate.next_funding_time)
-          );
+          const fundingInterval = getFundingInterval(nextFundingTime, parseInt(fundingRate.next_funding_time));
 
           return {
             ...acc,

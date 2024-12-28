@@ -5,13 +5,11 @@ const { formatFundingRate, getTimeString } = require('../utils');
 
 class Bitget {
   getSpotTradeLink(symbol) {
-    const currency = symbol.split('USDT')[0];
-    return `https://www.bitget.com/ru/spot/${currency}USDT`;
+    return `https://www.bitget.com/ru/spot/${symbol}`;
   }
 
   getFuturesTradeLink(symbol) {
-    const currency = symbol.split('USDT')[0];
-    return `https://www.bitget.com/ru/futures/usdt/${currency}USDT`;
+    return `https://www.bitget.com/ru/futures/usdt/${symbol}`;
   }
 
   async getFundingRates() {
@@ -22,7 +20,7 @@ class Bitget {
       const fundingRates = {};
 
       for await (const fundingData of fundingsData.data) {
-        const symbol = fundingData.symbol.split('_')[0];
+        const symbol = `${fundingData.symbol.split('_')[0]}USDT`;
 
         try {
           const { data: fundingTime } = await axios.get(
@@ -41,9 +39,7 @@ class Bitget {
             multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           };
         } catch (err) {
-          console.log(
-            `Ошибка обработки данных фандинга ${EXCHANGE_NAME.bitget} (${symbol}). ${err?.message}`
-          );
+          console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.bitget} (${symbol}). ${err?.message}`);
         }
 
         return fundingRates;

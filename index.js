@@ -54,15 +54,8 @@ function getArbitrageMessage(arbitrage, type) {
     return 'Спред не найден.';
   }
 
-  const {
-    symbol,
-    buyOption,
-    sellOption,
-    rateSpread,
-    priceSpread,
-    sellPriceDivergence,
-    predictedFundingRateSpread,
-  } = arbitrage;
+  const { symbol, buyOption, sellOption, rateSpread, priceSpread, sellPriceDivergence, predictedFundingRateSpread } =
+    arbitrage;
 
   const formattedBuyPredictedFundingRate =
     typeof buyOption.predictedFundingRate === 'string'
@@ -81,26 +74,24 @@ function getArbitrageMessage(arbitrage, type) {
       FUNDING_TYPE[buyOption.exchange]
     })\nПрогнозная: ${formattedBuyPredictedFundingRate}%\nОтклонение ставки: ${arbitrage.buyPriceDivergence.toFixed(
       2
-    )}% ${
-      buyOption.fundingRate > arbitrage.buyPriceDivergence ? '⬇️✅' : '⬆️❌'
-    }\n🕐Следующая выплата: ${buyOption.nextFundingTime} (${buyOption.fundingInterval}ч)\n${
-      buyOption.futuresLink
-    }\n\n`;
+    )}% ${buyOption.fundingRate > arbitrage.buyPriceDivergence ? '⬇️✅' : '⬆️❌'}\n🕐Следующая выплата: ${
+      buyOption.nextFundingTime
+    } (${buyOption.fundingInterval}ч)\n${buyOption.futuresLink}\n\n`;
   } else if (type === ARBITRAGE_TYPE.SPOT) {
-    buyMessage = `📕Покупка/LONG [${buyOption.indexPrice}] на ${
-      EXCHANGE_NAME[buyOption.exchange]
-    }\n${buyOption.spotLink}\n\n`;
+    buyMessage = `📕Покупка/LONG [${buyOption.indexPrice}] на ${EXCHANGE_NAME[buyOption.exchange]}\n${
+      buyOption.spotLink
+    }\n\n`;
   }
 
   const sellMessage = `📗Продажа/SHORT [${sellOption.markPrice}] на ${
     EXCHANGE_NAME[sellOption.exchange]
   }\nТекущая: ${sellOption.fundingRate.toFixed(4)}% (${
     FUNDING_TYPE[sellOption.exchange]
-  })\nПрогнозная: ${formattedSellPredictedFundingRate}%\nОтклонение ставки: ${sellPriceDivergence.toFixed(
-    2
-  )}% ${sellOption.fundingRate > sellPriceDivergence ? '⬇️❌' : '⬆️✅'}\n🕐Следующая выплата: ${
-    sellOption.nextFundingTime
-  } (${sellOption.fundingInterval}ч)\n${sellOption.futuresLink}\n\n`;
+  })\nПрогнозная: ${formattedSellPredictedFundingRate}%\nОтклонение ставки: ${sellPriceDivergence.toFixed(2)}% ${
+    sellOption.fundingRate > sellPriceDivergence ? '⬇️❌' : '⬆️✅'
+  }\n🕐Следующая выплата: ${sellOption.nextFundingTime} (${sellOption.fundingInterval}ч)\n${
+    sellOption.futuresLink
+  }\n\n`;
 
   return `Пара: ${symbol}\n\n${buyMessage}${sellMessage}💰Спред:\nТекущий: ${rateSpread.toFixed(
     2
@@ -122,10 +113,7 @@ function findArbitrages(symbolsData) {
           rateSpread = buyFundingRate + -sellFundingRate;
         } else if (buyFundingRate > 0 && sellFundingRate < 0) {
           rateSpread = -buyFundingRate + sellFundingRate;
-        } else if (
-          (buyFundingRate > 0 && sellFundingRate > 0) ||
-          (buyFundingRate < 0 && sellFundingRate < 0)
-        ) {
+        } else if ((buyFundingRate > 0 && sellFundingRate > 0) || (buyFundingRate < 0 && sellFundingRate < 0)) {
           rateSpread = buyFundingRate - sellFundingRate;
         }
 
@@ -151,17 +139,11 @@ function findArbitrages(symbolsData) {
         const indexPriceSpread = (sellMarkPrice / buyIndexPrice - 1) * 100;
 
         const buyPredictedFundingRate =
-          typeof buyOption.predictedFundingRate === 'string'
-            ? buyPriceDivergence
-            : buyOption.predictedFundingRate;
+          typeof buyOption.predictedFundingRate === 'string' ? buyPriceDivergence : buyOption.predictedFundingRate;
         const sellPredictedFundingRate =
-          typeof sellOption.predictedFundingRate === 'string'
-            ? sellPriceDivergence
-            : sellOption.predictedFundingRate;
+          typeof sellOption.predictedFundingRate === 'string' ? sellPriceDivergence : sellOption.predictedFundingRate;
 
-        let predictedFundingRateSpread = !!buyPredictedFundingRate
-          ? buyPredictedFundingRate
-          : sellPredictedFundingRate;
+        let predictedFundingRateSpread = !!buyPredictedFundingRate ? buyPredictedFundingRate : sellPredictedFundingRate;
 
         if (buyPredictedFundingRate < 0 && sellPredictedFundingRate > 0) {
           predictedFundingRateSpread = buyPredictedFundingRate + -sellPredictedFundingRate;
@@ -215,17 +197,15 @@ bot.command('spreads', async (ctx) => {
     const arbitrages = futuresArbitrages.filter(
       (futuresArbitrage) =>
         futuresArbitrage.rateSpread >= user.min_spread &&
-        futuresArbitrage.buyOption.fundingRate < futuresArbitrage.sellOption.fundingRate
-      // (futuresArbitrage.priceSpread >= -futuresArbitrage.rateSpread ||
-      //   futuresArbitrage.buyOption.fundingInterval !== 8 ||
-      //   futuresArbitrage.sellOption.fundingInterval !== 8)
+        futuresArbitrage.buyOption.fundingRate < futuresArbitrage.sellOption.fundingRate &&
+        (futuresArbitrage.priceSpread >= -futuresArbitrage.rateSpread ||
+          futuresArbitrage.buyOption.fundingInterval !== 8 ||
+          futuresArbitrage.sellOption.fundingInterval !== 8)
     );
 
     ctx.reply(arbitrages.length ? 'Спреды фьчерсов:' : 'Спреды фьчерсов не найдены.', {
       reply_markup: {
-        inline_keyboard: arbitrages.map((arbitrage) => [
-          mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.FUTURES),
-        ]),
+        inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.FUTURES)]),
       },
     });
   } else {
@@ -238,16 +218,15 @@ bot.command('spot_futures', async (ctx) => {
 
   if (user) {
     const arbitrages = spotFuturesArbitrages.filter(
-      (spotFuturesArbitrage) => spotFuturesArbitrage.rateSpread >= user.min_spread
-      // (spotFuturesArbitrage.priceSpread >= -spotFuturesArbitrage.rateSpread ||
-      //   spotFuturesArbitrage.sellOption.fundingInterval !== 8)
+      (spotFuturesArbitrage) =>
+        spotFuturesArbitrage.rateSpread >= user.min_spread &&
+        (spotFuturesArbitrage.priceSpread >= -spotFuturesArbitrage.rateSpread ||
+          spotFuturesArbitrage.sellOption.fundingInterval !== 8)
     );
 
     ctx.reply(arbitrages.length ? 'Спреды спот-фьчерсов:' : 'Спреды спот-фьчерсов не найдены.', {
       reply_markup: {
-        inline_keyboard: arbitrages.map((arbitrage) => [
-          mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.SPOT),
-        ]),
+        inline_keyboard: arbitrages.map((arbitrage) => [mapArbitrageToButton(arbitrage, ARBITRAGE_TYPE.SPOT)]),
       },
     });
   } else {

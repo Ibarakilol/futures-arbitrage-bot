@@ -10,18 +10,13 @@ class Binance {
   }
 
   getFuturesTradeLink(symbol) {
-    const currency = symbol.split('USDT')[0];
-    return `https://www.binance.com/ru/futures/${currency}USDT`;
+    return `https://www.binance.com/ru/futures/${symbol}`;
   }
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get(
-        'https://fapi.binance.com/fapi/v1/premiumIndex'
-      );
-      const { data: fundingIntervals } = await axios.get(
-        'https://fapi.binance.com/fapi/v1/fundingInfo'
-      );
+      const { data: fundingRates } = await axios.get('https://fapi.binance.com/fapi/v1/premiumIndex');
+      const { data: fundingIntervals } = await axios.get('https://fapi.binance.com/fapi/v1/fundingInfo');
 
       return fundingRates.reduce((acc, fundingRate) => {
         const fundingInterval =

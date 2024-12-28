@@ -10,15 +10,12 @@ class Bybit {
   }
 
   getFuturesTradeLink(symbol) {
-    const currency = symbol.split('USDT')[0];
-    return `https://www.bybit.com/trade/usdt/${currency}USDT`;
+    return `https://www.bybit.com/trade/usdt/${symbol}`;
   }
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get(
-        'https://api.bybit.com/v5/market/tickers?category=linear'
-      );
+      const { data: fundingRates } = await axios.get('https://api.bybit.com/v5/market/tickers?category=linear');
 
       return fundingRates.result.list
         .filter((fundingRate) => !fundingRate.symbol.includes('-'))
@@ -51,9 +48,7 @@ class Bybit {
               },
             };
           } catch (err) {
-            console.log(
-              `Ошибка обработки данных фандинга ${EXCHANGE_NAME.bybit} (${symbol}). ${err?.message}`
-            );
+            console.log(`Ошибка обработки данных фандинга ${EXCHANGE_NAME.bybit} (${symbol}). ${err?.message}`);
           }
         });
     } catch (err) {
