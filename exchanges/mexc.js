@@ -44,8 +44,8 @@ class MEXC {
 
           fundingRates[symbol.replace(/^10+/g, '')] = {
             fundingRate: formatFundingRate(fundingRateData?.fundingRate),
-            indexPrice: indexPrice.data.indexPrice,
-            markPrice: markPrice.data.fairPrice,
+            indexPrice: indexPrice.data?.indexPrice ?? 0,
+            markPrice: markPrice.data?.fairPrice ?? 0,
             nextFundingTime: getTimeString(nextFundingTime),
             fundingInterval,
             predictedFundingRate: '-',
