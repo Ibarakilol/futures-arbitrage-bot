@@ -97,7 +97,7 @@ function getArbitrageMessage(arbitrage, type) {
     sellOption.futuresLink
   }\n\n`;
 
-  const VOLUME_PER_EXCHANGE = VOLUME / 2;
+  const VOLUME_PER_EXCHANGE = (VOLUME / 2) * (type === ArbitrageType.FUTURES ? LEVERAGE : 1);
   const buyTokenVolume = VOLUME_PER_EXCHANGE / buyOption.markPrice;
   const sellTokenVolume = VOLUME_PER_EXCHANGE / sellOption.markPrice;
 
