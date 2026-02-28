@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const { EXCHANGE_NAME } = require('../constants');
+const { ExchangeName } = require('../constants');
 const { formatFundingRate, getTimeString } = require('../utils');
 
 class Binance {
@@ -15,31 +15,36 @@ class Binance {
 
   async getFundingRates() {
     try {
-      const { data: fundingRates } = await axios.get('https://fapi.binance.com/fapi/v1/premiumIndex');
-      const { data: fundingIntervals } = await axios.get('https://fapi.binance.com/fapi/v1/fundingInfo');
+      const { data: fundingRates } = await axios.get(
+        'https://fapi.binance.com/fapi/v1/premiumIndex'
+      );
+      const { data: fundingIntervals } = await axios.get(
+        'https://fapi.binance.com/fapi/v1/fundingInfo'
+      );
 
       return fundingRates.reduce((acc, fundingRate) => {
+        const symbol = fundingRate.symbol;
         const fundingInterval =
-          fundingIntervals.find((fundingInterval) => fundingInterval.symbol === fundingRate.symbol)
+          fundingIntervals.find((fundingInterval) => fundingInterval.symbol === symbol)
             ?.fundingIntervalHours ?? 8;
 
         return {
           ...acc,
-          [fundingRate.symbol.replace(/^10+/g, '')]: {
+          [symbol.replace(/^10+/g, '')]: {
             fundingRate: formatFundingRate(fundingRate.lastFundingRate),
             indexPrice: fundingRate.indexPrice,
             markPrice: fundingRate.markPrice,
             nextFundingTime: getTimeString(fundingRate.nextFundingTime),
             fundingInterval,
             predictedFundingRate: '-',
-            spotLink: this.getSpotTradeLink(fundingRate.symbol.replace(/^10+/g, '')),
-            futuresLink: this.getFuturesTradeLink(fundingRate.symbol),
-            multiplier: fundingRate.symbol.match(/^10+/g)?.[0] ?? 1,
+            spotLink: this.getSpotTradeLink(symbol.replace(/^10+/g, '')),
+            futuresLink: this.getFuturesTradeLink(symbol),
+            multiplier: symbol.match(/^10+/g)?.[0] ?? 1,
           },
         };
       });
     } catch (err) {
-      console.log(`Ошибка получения данных фандинга ${EXCHANGE_NAME.binance}. ${err?.message}`);
+      console.log(`Ошибка получения данных фандинга ${ExchangeName.BINANCE}. ${err?.message}`);
     }
   }
 }

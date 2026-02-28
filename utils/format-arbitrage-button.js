@@ -1,14 +1,14 @@
-const { ARBITRAGE_TYPE } = require('../constants');
+const { ArbitrageType } = require('../constants');
 
-function mapArbitrageToButton(arbitrage, type) {
+function formatArbitrageButton(arbitrage, type) {
   let nonStandartInterval = '';
 
   if (
-    type === ARBITRAGE_TYPE.FUTURES &&
+    type === ArbitrageType.FUTURES &&
     (arbitrage.buyOption.fundingInterval !== 8 || arbitrage.sellOption.fundingInterval !== 8)
   ) {
     nonStandartInterval = ' 🕐';
-  } else if (type === ARBITRAGE_TYPE.SPOT && arbitrage.sellOption.fundingInterval !== 8) {
+  } else if (type === ArbitrageType.SPOT && arbitrage.sellOption.fundingInterval !== 8) {
     nonStandartInterval = ' 🕐';
   }
 
@@ -20,4 +20,4 @@ function mapArbitrageToButton(arbitrage, type) {
   };
 }
 
-module.exports = mapArbitrageToButton;
+module.exports = { formatArbitrageButton };

@@ -11,25 +11,25 @@ const okx = require('./okx');
 
 async function getFundingRates(exchange) {
   switch (exchange) {
-    case 'binance':
+    case 'BINANCE':
       return await binance.getFundingRates();
-    case 'bingx':
+    case 'BINGX':
       return await bingx.getFundingRates();
-    case 'bitget':
+    case 'BITGET':
       return await bitget.getFundingRates();
-    case 'bitmart':
+    case 'BITMART':
       return await bitmart.getFundingRates();
-    case 'bybit':
+    case 'BYBIT':
       return await bybit.getFundingRates();
-    case 'coinex':
+    case 'COINEX':
       return await coinex.getFundingRates();
-    case 'huobi':
+    case 'HUOBI':
       return await huobi.getFundingRates();
-    case 'kucoin':
+    case 'KUCOIN':
       return await kucoin.getFundingRates();
-    case 'mexc':
+    case 'MEXC':
       return await mexc.getFundingRates();
-    case 'okx':
+    case 'OKX':
       return await okx.getFundingRates();
     default:
       return null;
