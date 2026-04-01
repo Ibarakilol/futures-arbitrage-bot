@@ -101,7 +101,7 @@ function getArbitrageMessage(arbitrage, type) {
   const buyTokenVolume = VOLUME_PER_EXCHANGE / buyOption.markPrice;
   const sellTokenVolume = VOLUME_PER_EXCHANGE / sellOption.markPrice;
 
-  return `Пара: ${symbol}\n\nОбъем для торговли на каждую биржу: $${VOLUME_PER_EXCHANGE}${type === ArbitrageType.FUTURES ? ` (плечо: Х${LEVERAGE})` : ''}\nОбъем монет на каждую биржу: ${Math.min(buyTokenVolume, sellTokenVolume).toFixed(0)}\n\n${buyMessage}${sellMessage}💰Спред:\nТекущий: ${rateSpread.toFixed(
+  return `Пара: ${symbol}\n\nОбщий объем: $${VOLUME}\nОбъем для торговли на каждую биржу: $${VOLUME_PER_EXCHANGE}${type === ArbitrageType.FUTURES ? ` (плечо: Х${LEVERAGE})` : ''}\nОбъем монет на каждую биржу: ${Math.min(buyTokenVolume, sellTokenVolume).toFixed(0)}\n\n${buyMessage}${sellMessage}💰Спред:\nТекущий: ${rateSpread.toFixed(
     2
   )}%\nПрогнозный: ${predictedFundingRateSpread.toFixed(2)}%\nКурсовой: ${priceSpread.toFixed(2)}%`;
 }
@@ -316,8 +316,8 @@ bot.on('message', async (ctx) => {
       console.log(`${getTimeString()}: Поиск спредов...`);
       const fundingRatesData = await parseFundingRatesData();
       findArbitrages(fundingRatesData);
-      console.log(`${getTimeString()}: Поиск закончен. Следующая итерация через 10 секунд.`);
-      await sleep(10);
+      console.log(`${getTimeString()}: Поиск закончен. Следующая итерация через минуту.`);
+      await sleep(60);
     }
   } catch (err) {
     console.log(err);

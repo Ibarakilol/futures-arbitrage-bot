@@ -14,15 +14,15 @@ const ExchangeFee = {
 };
 
 const ExchangeName = {
-  // BINANCE: 'Binance', // Не работает в России
+  // BINANCE: 'Binance',
   BINGX: 'BingX',
   BITGET: 'Bitget',
   // BITMART: 'BitMart', // TODO
   BYBIT: 'Bybit',
   COINEX: 'CoinEx',
   // HUOBI: 'Huobi', // TODO
-  // KUCOIN: 'KuCoin', // TODO: Long request
-  // MEXC: 'MEXC', // TODO: Long request
+  // KUCOIN: 'KuCoin', // TODO
+  // MEXC: 'MEXC', // TODO
   OKX: 'OKX',
 };
 
